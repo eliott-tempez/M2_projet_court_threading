@@ -28,9 +28,9 @@ template_file = "data/5AWL.pdb"
 
 
 
-#################################################################################
-#####################                CLASSES                #####################
-#################################################################################
+##############################################################################
+###################                CLASSES                ####################
+##############################################################################
 
 class AlphaCarbon:
     """Information on alpha carbons in a 3D structure"""
@@ -52,7 +52,7 @@ class Protein:
         """Add a residue to the protein.
 
         Args:
-            residue (AphaCarbon): alpha carbon to add to the end of the existing protein
+            residue (AphaCarbon): carbon to add at the end of the protein
         """
         self.carbon_list.append(residue)
     
@@ -66,32 +66,44 @@ class Protein:
         
     
 
+##############################################################################
+###################                FUNCTIONS                ##################
+##############################################################################
 
-
-
-
-
-
-#################################################################################
-####################                FUNCTIONS                ####################
-#################################################################################
-
-####------------------------      HANDLE ERRORS      ------------------------####
+####-----------------------      HANDLE ERRORS      ----------------------####
 def check_file_exists(file_path):
     """Check if file exists"""
-    assert os.path.isfile(file_path), f"Error : The file '{file_path}' doesn't exist"
+    fils_exists = os.path.isfile(file_path)
+    assert fils_exists, f"Error : The file '{file_path}' doesn't exist"
     
 
 def check_pdb_file(file_path):
     """Check if pdb file is conform"""
-    assert file_path.split(".")[-1] == "pdb", f"Error : The file '{file_path}' is not a pdb file"
+    is_pdb = file_path.split(".")[-1] == "pdb"
+    assert is_pdb, f"Error : The file '{file_path}' is not a pdb file"
     
+
+def check_fasta_file(file_path):
+    """Check if fasta file is conform"""
+    is_fasta = file_path.split(".")[-1] in ["fasta", "fa"]
+    assert is_fasta, f"Error : The file '{file_path}' is not a fasta file"
+
+
+def check_sequence(file_path, seq):
+    """Check if sequence contains residues:
+       if not, the problem is the fasta file"""
+    seq_not_empty = seq != ""
+    assert seq_not_empty, f"Error : The fasta file '{file_path}' is empty"
+
+
 def check_protein(file_path, protein):
-    """Check if protein contains atoms ; if not, the problem is the pdb file"""
-    assert protein.carbon_list != [], f"Error : The pdb file '{file_path}' is empty or non valid"
+    """Check if protein contains atoms: 
+       if not, the problem is the pdb file"""
+    prot_not_empty = protein.carbon_list != []
+    assert prot_not_empty, f"Error : The pdb file '{file_path}' is not valid"
 
 
-####--------------------------      READ FILES      -------------------------####
+####------------------------      READ FILES      ------------------------####
 def get_dtf_from_dope_file(file_path):
     """Read dope file and return pandas dataframe.
 
@@ -106,15 +118,16 @@ def get_dtf_from_dope_file(file_path):
     # get the names of the distances corresponding to the dope scores
     anstrom_len_as_str = np.arange(0.25, 15, 0.5).tolist()
     # read dope file
-    dope_mat_full = pd.read_csv(file_path, sep=" ",
-                                names=["res1", "atom1", "res2", "atom2"] + anstrom_len_as_str)
+    colnames = ["res1", "atom1", "res2", "atom2"] + anstrom_len_as_str
+    dope_mat_full = pd.read_csv(file_path, sep=" ", names=colnames)
     # keep only carbon alpha dope scores
-    dope_mat_ca = dope_mat_full[(dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")]
+    mask = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
+    dope_mat_ca = dope_mat_full[mask]
     # return dataframe without unimportant columns
     return dope_mat_ca.drop(columns=["atom1", "atom2"]).reset_index(drop=True)
 
 
-def get_query_from_file(file_path):
+def get_query_from_fasta(file_path):
     """Read simple fasta file and return sequence.
 
     Args:
@@ -123,15 +136,17 @@ def get_query_from_file(file_path):
     Returns:
         str: query sequence
     """
-    # check if file exists
+    # check if file exists and is fasta file
     check_file_exists(file_path)
+    check_fasta_file(file_path)
     # extract sequence in str form
     seq_str = str(SeqIO.read(file_path, "fasta").seq)
+    check_sequence(file_path, seq_str)
     # transform sequence in 3-letter list form
     return [seq3(letter).upper() for letter in seq_str]
 
 
-def get_template_from_file(file_path):
+def get_template_from_pdb(file_path):
     """Read pdb file and extract information on all alpha carbons present.
 
     Args:
@@ -166,22 +181,42 @@ def get_template_from_file(file_path):
     return template
 
 
+####----------------------      HANDLE MATRIXES      ---------------------####
 
+def initialise_matrix(shape):
+    """Initialise numpy matrix of given shape with zeros"""
+    return np.zeros(shape)
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################
+#####################                MAIN                #####################
+##############################################################################
 
 if __name__ == "__main__":
-    #### GET DATA ####
+    ####-------------       GET DATA       -------------####
     # read dope values
     dope_scores = get_dtf_from_dope_file(DOPE_FILE)
     # read query sequence
-    test_seq = get_query_from_file(seq_file)
+    test_seq = get_query_from_fasta(seq_file)
     # read 3D data
-    template_prot = get_template_from_file(template_file)
+    template_prot = get_template_from_pdb(template_file)
     
-    #### BUILD MATRIXES ####
+    ####-------------    BUILD MATRIXES    -------------####
     row_names_query = test_seq
     col_names_template = template_prot.get_carbons_list()
-    low_lvl_mat = np.zeros((len(row_names_query), len(col_names_template)))
-    high_lvl_mat = np.zeros((len(row_names_query), len(col_names_template)))
+    mat_shape = (len(row_names_query), len(col_names_template))
+    low_lvl_mat = initialise_matrix(mat_shape)
+    high_lvl_mat = initialise_matrix(mat_shape)
     
             
 
