@@ -7,4 +7,5 @@ dependencies:
     - python
     - pandas
     - numpy
+    - biopython
     - matplotlib
