@@ -21,8 +21,8 @@ import numpy as np
 
 DOPE_FILE = "data/dope.par"
 #### A SUPPRIMER POUR AJOUTER LES COMMANDES UTILISATEURS
-seq_file = "data/1UX8.fasta"
-template_file = "data/1UX8.pdb"
+seq_file = "data/3NIR.fasta"
+template_file = "data/3NIR.pdb"
 
 
 
