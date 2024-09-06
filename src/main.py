@@ -18,15 +18,13 @@ import os
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from Bio.PDB import PDBParser
-from Bio.PDB import PDBIO
-
+from Bio.SeqUtils import seq3
 
 
 DOPE_FILE = "data/dope.par"
 #### A SUPPRIMER POUR AJOUTER LES COMMANDES UTILISATEURS
-seq_file = "data/3NIR.fasta"
-template_file = "data/3NIR.pdb"
+seq_file = "data/5AWL.fasta"
+template_file = "data/5AWL.pdb"
 
 
 
@@ -36,9 +34,8 @@ template_file = "data/3NIR.pdb"
 
 class AlphaCarbon:
     """Information on alpha carbons in a 3D structure"""
-    def __init__(self, residue_name, residue_number, x, y, z):
-        self.residue_name = residue_name
-        self.residue_number = residue_number
+    def __init__(self, res_number, x, y, z):
+        self.atom_name = "CA" + str(res_number)
         # coordinates
         self.x = x
         self.y = y
@@ -58,14 +55,14 @@ class Protein:
             residue (AphaCarbon): alpha carbon to add to the end of the existing protein
         """
         self.carbon_list.append(residue)
-        
-    def get_residues_list(self):
-        """Get list of residues in the protein
+    
+    def get_carbons_list(self):
+        """Get list of atoms (one per residue) in the protein
 
         Returns:
-            list: list of residues in 3-letters form
+            list: list of atom names
         """
-        return [ca.residue_name for ca in self.carbon_list]
+        return [ca.atom_name for ca in self.carbon_list]
         
     
 
@@ -94,14 +91,12 @@ def check_protein(file_path, protein):
     assert protein.carbon_list != [], f"Error : The pdb file '{file_path}' is empty or non valid"
 
 
-
-
 ####--------------------------      READ FILES      -------------------------####
 def get_dtf_from_dope_file(file_path):
     """Read dope file and return pandas dataframe.
 
     Args:
-        file_path (str): dope file name
+        file_path (str): dope file path
 
     Returns:
         pd.DataFrame: dataframe of dope score for each pairwise interaction
@@ -123,37 +118,49 @@ def get_query_from_file(file_path):
     """Read simple fasta file and return sequence.
 
     Args:
-        filename (str): fasta file name
+        filename (str): fasta file path
 
     Returns:
         str: query sequence
     """
     # check if file exists
     check_file_exists(file_path)
-    # extract sequence
-    return str(SeqIO.read(file_path, "fasta").seq)
+    # extract sequence in str form
+    seq_str = str(SeqIO.read(file_path, "fasta").seq)
+    # transform sequence in 3-letter list form
+    return [seq3(letter).upper() for letter in seq_str]
 
 
 def get_template_from_file(file_path):
+    """Read pdb file and extract information on all alpha carbons present.
+
+    Args:
+        file_path (str): pdb file path
+
+    Returns:
+        Protein: a Protein instance which contains infos on all alpha carbons
+    """
     # check if file exists and is pdb file
     check_file_exists(file_path)
     check_pdb_file(file_path)
-    # create protein
+    # create empty protein
     template = Protein()
     # parse pdb file
+    res_nb = 0
     with open(file_path, "r") as pdb_file:
         for line in pdb_file:
             # check if line is an alpha carbon
             if line.startswith("ATOM") and line[12:16].strip() == "CA":
-                # extract atom informations
-                res_name = line[17:20].strip()
-                res_number = int(line[22:26].strip())
-                x = float(line[30:38].strip())
-                y = float(line[38:46].strip())
-                z = float(line[46:54].strip())
-                alpha_c = AlphaCarbon(res_name, res_number, x, y, z)
-                # add all alpha carbons to the template protein
-                template.add_residue(alpha_c)
+                # check if we don't already have a position for this residue
+                if res_nb != int(line[22:26].strip()):
+                    res_nb += 1
+                    # extract atom information
+                    x = float(line[30:38].strip())
+                    y = float(line[38:46].strip())
+                    z = float(line[46:54].strip())
+                    alpha_c = AlphaCarbon(res_nb, x, y, z)
+                    # add all alpha carbons to the template protein
+                    template.add_residue(alpha_c)
     # check protein
     check_protein(file_path, template)
     return template
@@ -162,15 +169,19 @@ def get_template_from_file(file_path):
 
 
 if __name__ == "__main__":
+    #### GET DATA ####
     # read dope values
     dope_scores = get_dtf_from_dope_file(DOPE_FILE)
     # read query sequence
     test_seq = get_query_from_file(seq_file)
     # read 3D data
-    template = get_template_from_file(template_file)
-    # get template protein sequence
-    template_sequence = template.get_residues_list()
-    print(template_sequence)
+    template_prot = get_template_from_file(template_file)
+    
+    #### BUILD MATRIXES ####
+    row_names_query = test_seq
+    col_names_template = template_prot.get_carbons_list()
+    low_lvl_mat = np.zeros((len(row_names_query), len(col_names_template)))
+    high_lvl_mat = np.zeros((len(row_names_query), len(col_names_template)))
     
             
 
