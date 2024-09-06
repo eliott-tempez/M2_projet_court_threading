@@ -1,7 +1,13 @@
+
+input files:
+
+
 prerequisites:
 * install conda
-* install the conda environment 
+* install the conda environment (from the current directory):
 `conda env create -f environment.yaml`
+* run the code line:
+`python src/main.py arg1 arg2`
 
 
 data obtention : 
