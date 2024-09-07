@@ -6,3 +6,6 @@ channels:
 dependencies:
     - python
     - flask
+    - pandas
+    - numpy
+    - biopython

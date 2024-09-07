@@ -246,10 +246,25 @@ def get_dope_score(dope_mat, res1, res2, distance):
                  (distance_above - distance)) * 
                 (distance_above - distance_below))
         
-        
+
+def fill_distance_matrix(template_prot):
+    """Create a distance matrix for all pairwise distances in the template."""
+    n = template_prot.get_length()
+    distance_matrix = initialise_matrix((n, n))
+    # calculate all distances between alpha carbons in the protein
+    for i in range(n):
+        for j in range(n):
+            if i !=j:
+                dist = template_prot.calculate_inter_ca_distance(i, j)
+                distance_matrix[i, j] = dist
+    return distance_matrix
 
 
-def fill_low_level_matrix(shape):
+
+
+
+
+def fill_low_level_matrix(shape, dist_matrix):
     L_mat = initialise_matrix(shape)
     n_query = shape[0]
     n_template = shape[1]
@@ -293,6 +308,9 @@ if __name__ == "__main__":
     template_prot = get_template_from_pdb(template_file)
     
     ####-------------    SET UP MATRICES    -------------####
+    # distance matrix
+    dist_matrix = fill_distance_matrix(template_prot)
+    # low and hich level matrices
     row_names_query = test_seq
     n_atoms_template = template_prot.get_length()
     mat_shape = (len(row_names_query), n_atoms_template)
