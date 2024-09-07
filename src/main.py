@@ -15,6 +15,7 @@ __date__ = "2024-09-11"
 
 
 import os
+import math
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
@@ -41,6 +42,12 @@ class AlphaCarbon:
         self.y = y
         self.z = z
         
+    def calculate_distance(self, carbon2):
+        """Calculate the distance in angstroms between 2 alpha carbons"""
+        return math.sqrt((carbon2.x-self.x)**2 + 
+                         (carbon2.y-self.y)**2 + 
+                         (carbon2.z-self.z)**2)
+        
         
 class Protein:
     """Protein class which includes all alpha carbons."""
@@ -56,13 +63,21 @@ class Protein:
         """
         self.carbon_list.append(residue)
     
-    def get_carbons_list(self):
-        """Get list of atoms (one per residue) in the protein
+    def get_length(self):
+        """Get number of alpha carbons in the protein."""
+        return len(self.carbon_list)
+    
+    def calculate_inter_ca_distance(self, n_ca1, n_ca2):
+        """Return distance between two alpha carbons in angstroms.
+
+        Args:
+            n_ca1 (int): number of the first carbon in order in the protein
+            n_ca2 (int): number of the second carbon in order in the protein
 
         Returns:
-            list: list of atom names
+            float: distance in angstroms
         """
-        return [ca.atom_name for ca in self.carbon_list]
+        return self.carbon_list[n_ca1].calculate_distance(self.carbon_list[n_ca2])
         
     
 
@@ -101,6 +116,12 @@ def check_protein(file_path, protein):
        if not, the problem is the pdb file"""
     prot_not_empty = protein.carbon_list != []
     assert prot_not_empty, f"Error : The pdb file '{file_path}' is not valid"
+    
+
+def check_positive_number(number):
+    """Check if a number is greater than zero"""
+    assert number >= 0, f"Error : a distance cannot be negative, check your pdb file"
+
 
 
 ####------------------------      READ FILES      ------------------------####
@@ -181,11 +202,71 @@ def get_template_from_pdb(file_path):
     return template
 
 
-####----------------------      HANDLE MATRIXES      ---------------------####
+####----------------------      HANDLE MATRICES      ---------------------####
 
 def initialise_matrix(shape):
     """Initialise numpy matrix of given shape with zeros"""
     return np.zeros(shape)
+
+
+def get_dope_score(dope_mat, res1, res2, distance):
+    """Get corresponding dope score from dope dataframe.
+
+    Args:
+        dope_mat (pd.DataFrame): the dope scores dataframe
+        res1 (str): name of the first residue (3-letter in all caps)
+        res2 (str): name of the second residue
+        distance (float): distance between the two residues in angstroms
+
+    Returns:
+        float: corresponding dope score
+    """
+    check_positive_number(distance)
+    # return high value if distance too short
+    if distance < 0.25:
+        return 10
+    # return null value if distance too high
+    elif distance > 14.75:
+        return 0
+    # if we have the exact distance in the dope dataframe, return value
+    elif distance in dope_mat.columns:
+        mask = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
+                        (dope_mat["res2"] == max(res1, res2))]
+        return dope_mat.loc(mask)[distance]
+    # if we don't, apply an affine function
+    else:
+        mask = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
+                        (dope_mat["res2"] == max(res1, res2))]
+        # extract distances in dataframe surrounding our distance value
+        numeric_columns = [col for col in dope_mat.columns if isinstance(col, (int, float))]
+        distance_below = max([x for x in numeric_columns if x < distance])
+        distance_above = min([x for x in numeric_columns if x > distance])
+        # return proportional dope score
+        return (((distance - distance_below) / 
+                 (distance_above - distance)) * 
+                (distance_above - distance_below))
+        
+        
+
+
+def fill_low_level_matrix(shape):
+    L_mat = initialise_matrix(shape)
+    n_query = shape[0]
+    n_template = shape[1]
+    
+    # go through the matrix
+    for i in range(n_query):
+        for j in range(n_template):
+            # for each pair of residues in the template
+            for p in range(n_template):
+                if p != j:
+                    # calculate dope score
+                    distance = 
+                    
+                
+            
+        
+    
 
 
 
@@ -211,12 +292,31 @@ if __name__ == "__main__":
     # read 3D data
     template_prot = get_template_from_pdb(template_file)
     
-    ####-------------    BUILD MATRIXES    -------------####
+    ####-------------    SET UP MATRICES    -------------####
     row_names_query = test_seq
-    col_names_template = template_prot.get_carbons_list()
-    mat_shape = (len(row_names_query), len(col_names_template))
+    n_atoms_template = template_prot.get_length()
+    mat_shape = (len(row_names_query), n_atoms_template)
+    
+    ####-------------    SET UP MATRICES    -------------####
+    
+    
+    
+    
+    
+    
+    
+    
+    
     low_lvl_mat = initialise_matrix(mat_shape)
     high_lvl_mat = initialise_matrix(mat_shape)
+    
+    
+    
+    
+    
+    
+    
+    
     
             
 
