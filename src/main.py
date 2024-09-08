@@ -37,7 +37,7 @@ template_file = "data/5AWL.pdb"
 class AlphaCarbon:
     """Information on alpha carbons in a 3D structure"""
     def __init__(self, res_number, x, y, z):
-        self.atom_name = "CA" + str(res_number)
+        self.atom_name = str(res_number)
         # coordinates
         self.x = x
         self.y = y
@@ -236,24 +236,28 @@ def get_dope_score(dope_mat, res1, res2, distance):
         return 0
     # if we have the exact distance in the dope dataframe, return value
     elif distance in dope_mat.columns:
-        mask = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
+        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
                         (dope_mat["res2"] == max(res1, res2))]
-        return dope_mat.loc(mask)[distance]
+        return line_dope_mat[distance].iloc[0]
     # if we don't, apply an affine function
     else:
-        mask = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
+        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
                         (dope_mat["res2"] == max(res1, res2))]
         # extract distances in dataframe surrounding our distance value
-        numeric_columns = [col for col in dope_mat.columns if isinstance(col, (int, float))]
+        numeric_columns = [col for col in dope_mat.columns 
+                           if isinstance(col, (int, float))]
         distance_below = max([x for x in numeric_columns if x < distance])
         distance_above = min([x for x in numeric_columns if x > distance])
+        score_below = line_dope_mat[distance_below].iloc[0]
+        score_above = line_dope_mat[distance_above].iloc[0]
         # return proportional dope score
-        return (((distance - distance_below) / 
-                 (distance_above - distance)) * 
-                (distance_above - distance_below))
+        score_interpolated = score_below + (((distance - distance_below) / 
+                                            (distance_above - distance_below)) * 
+                                            (score_above - score_below))
+        return round(score_interpolated, 2)
 
 
-def initialise_matrix(shape, value=0):
+def initialise_matrix(shape, value=0.0):
     """Initialise numpy matrix of given shape with chosen value"""
     check_matrix_init_value(value)
     return np.full(shape, value)
@@ -268,11 +272,12 @@ def fill_distance_matrix(template_prot):
         for j in range(n):
             if i !=j:
                 dist = template_prot.calculate_inter_ca_distance(i, j)
-                distance_matrix[i, j] = dist
+                distance_matrix[i, j] = round(dist, 2)
     return distance_matrix
 
 
-def fill_low_level_matrix(shape, dist_matrix, dope_matrix, test_sequence, i, j, gap_penalty):
+def fill_low_level_matrix(shape, dist_matrix, dope_matrix, 
+                          test_sequence, gap_penalty, i, j):
     """Fill and return a singular low-level matrix for the start point [i, j].
 
     Args:
@@ -289,7 +294,7 @@ def fill_low_level_matrix(shape, dist_matrix, dope_matrix, test_sequence, i, j, 
     """
     # fill matrix with inf because we won't fill some areas 
     # and the goal is to minimise
-    L_mat = initialise_matrix(shape, np.inf)
+    L_mat = initialise_matrix(shape)
     n_query = shape[0]
     n_template = shape[1]
     
@@ -306,8 +311,7 @@ def fill_low_level_matrix(shape, dist_matrix, dope_matrix, test_sequence, i, j, 
             L_mat[k, l] = min(
                 L_mat[k+1, l+1] + score,
                 L_mat[k, l+1] + gap_penalty,
-                L_mat[k+1, l] + gap_penalty
-            )
+                L_mat[k+1, l] + gap_penalty)
             
     # fill matrix area after the starting point
     for k in range(i+3, shape[0]):
@@ -320,10 +324,23 @@ def fill_low_level_matrix(shape, dist_matrix, dope_matrix, test_sequence, i, j, 
             L_mat[k, l] = min(
                 L_mat[k-1, l-1] + score,
                 L_mat[k, l-1] + gap_penalty,
-                L_mat[k-1, l] + gap_penalty
-            )
+                L_mat[k-1, l] + gap_penalty)
     #return matrix
     return L_mat
+
+
+def create_global_low_level(shape, dist_matrix, dope_matrix, 
+                            test_sequence, gap_penalty):
+    """Create the super-low-level matrix filled with each low-level matrix"""
+    # initialise global matrix
+    global_L_mat = np.empty(shape, dtype=object)
+    # for each cell, create a low-level matrix
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            L_mat = fill_low_level_matrix(shape, dist_matrix, dope_matrix,
+                            test_sequence, gap_penalty, i, j)
+            global_L_mat[i, j] = L_mat
+    return global_L_mat
             
             
         
@@ -367,9 +384,11 @@ if __name__ == "__main__":
     mat_shape = (len(row_names_query), n_atoms_template)
     
     # create low-level-matrix
-    global_L_mat = fill_low_level_matrix(mat_shape, dist_matrix, dope_scores,
-                                         test_seq, 0, 0, GAP_PENALTY)
-    print(global_L_mat)
+    global_L_mat = create_global_low_level(mat_shape, dist_matrix,
+                                           dope_scores, test_seq, GAP_PENALTY)
+    
+    
+    
     
     
     
