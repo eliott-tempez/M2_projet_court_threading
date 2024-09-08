@@ -19,10 +19,11 @@ import math
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from Bio.SeqUtils import seq3
+from Bio.SeqUtils import seq1
 
 
 DOPE_FILE = "data/dope.par"
+GAP_PENALTY = 0
 #### A SUPPRIMER POUR AJOUTER LES COMMANDES UTILISATEURS
 seq_file = "data/5AWL.fasta"
 template_file = "data/5AWL.pdb"
@@ -120,7 +121,15 @@ def check_protein(file_path, protein):
 
 def check_positive_number(number):
     """Check if a number is greater than zero"""
-    assert number >= 0, f"Error : a distance cannot be negative, check your pdb file"
+    assert number >= 0, f"Error : a distance cannot be negative, \
+        check your pdb file"
+    
+    
+def check_matrix_init_value(value):
+    value_is_number = isinstance(value, (int, float))
+    value_is_inf = np.isinf(value)
+    assert value_is_number or value_is_inf, f"Error : matrix should \
+        be initiated with a number or infinite value"
 
 
 
@@ -144,6 +153,9 @@ def get_dtf_from_dope_file(file_path):
     # keep only carbon alpha dope scores
     mask = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
     dope_mat_ca = dope_mat_full[mask]
+    # change 3-letter amino-acid code to 1-letter
+    dope_mat_ca.loc[:, "res1"] = [seq1(res) for res in dope_mat_ca["res1"]]
+    dope_mat_ca.loc[:, "res2"] = [seq1(res) for res in dope_mat_ca["res2"]]
     # return dataframe without unimportant columns
     return dope_mat_ca.drop(columns=["atom1", "atom2"]).reset_index(drop=True)
 
@@ -163,8 +175,7 @@ def get_query_from_fasta(file_path):
     # extract sequence in str form
     seq_str = str(SeqIO.read(file_path, "fasta").seq)
     check_sequence(file_path, seq_str)
-    # transform sequence in 3-letter list form
-    return [seq3(letter).upper() for letter in seq_str]
+    return seq_str
 
 
 def get_template_from_pdb(file_path):
@@ -204,11 +215,6 @@ def get_template_from_pdb(file_path):
 
 ####----------------------      HANDLE MATRICES      ---------------------####
 
-def initialise_matrix(shape):
-    """Initialise numpy matrix of given shape with zeros"""
-    return np.zeros(shape)
-
-
 def get_dope_score(dope_mat, res1, res2, distance):
     """Get corresponding dope score from dope dataframe.
 
@@ -245,7 +251,13 @@ def get_dope_score(dope_mat, res1, res2, distance):
         return (((distance - distance_below) / 
                  (distance_above - distance)) * 
                 (distance_above - distance_below))
-        
+
+
+def initialise_matrix(shape, value=0):
+    """Initialise numpy matrix of given shape with chosen value"""
+    check_matrix_init_value(value)
+    return np.full(shape, value)
+
 
 def fill_distance_matrix(template_prot):
     """Create a distance matrix for all pairwise distances in the template."""
@@ -260,23 +272,62 @@ def fill_distance_matrix(template_prot):
     return distance_matrix
 
 
+def fill_low_level_matrix(shape, dist_matrix, dope_matrix, test_sequence, i, j, gap_penalty):
+    """Fill and return a singular low-level matrix for the start point [i, j].
 
+    Args:
+        shape (tuple): shape of the matrix
+        dist_matrix (np.ndarray): distance matrix for the template
+        dope_matrix (pd.DataFrame): dataframe of the dope scores
+        test_sequence (list): list of residues in the test sequence
+        i (int): line number of the start point for this matrix
+        j (int): column number of the start point for this matrix
+        gap_penalty (int): gap penalty
 
-
-
-def fill_low_level_matrix(shape, dist_matrix):
-    L_mat = initialise_matrix(shape)
+    Returns:
+        np.ndarray: low-level matrix for the start point [i, j]
+    """
+    # fill matrix with inf because we won't fill some areas 
+    # and the goal is to minimise
+    L_mat = initialise_matrix(shape, np.inf)
     n_query = shape[0]
     n_template = shape[1]
     
-    # go through the matrix
-    for i in range(n_query):
-        for j in range(n_template):
-            # for each pair of residues in the template
-            for p in range(n_template):
-                if p != j:
-                    # calculate dope score
-                    distance = 
+    L_mat[i, j] = 0
+    # fill matrix area before the starting point 
+    # but avoid the two residues next to starting point
+    for k in range(i-3, -1, -1):
+        for l in range(j-3, -1, -1):
+            dist = dist_matrix[j, l]
+            res1 = test_sequence[i]
+            res2 = test_sequence[k]
+            score = get_dope_score(dope_matrix, res1, res2, dist)
+            # calculate minimum score
+            L_mat[k, l] = min(
+                L_mat[k+1, l+1] + score,
+                L_mat[k, l+1] + gap_penalty,
+                L_mat[k+1, l] + gap_penalty
+            )
+            
+    # fill matrix area after the starting point
+    for k in range(i+3, shape[0]):
+        for l in range(j+3, shape[1]):
+            dist = dist_matrix[j, l]
+            res1 = test_sequence[i]
+            res2 = test_sequence[k]
+            score = get_dope_score(dope_matrix, res1, res2, dist)
+            # calculate minimum score
+            L_mat[k, l] = min(
+                L_mat[k-1, l-1] + score,
+                L_mat[k, l-1] + gap_penalty,
+                L_mat[k-1, l] + gap_penalty
+            )
+    #return matrix
+    return L_mat
+            
+            
+        
+    
                     
                 
             
@@ -310,12 +361,15 @@ if __name__ == "__main__":
     ####-------------    SET UP MATRICES    -------------####
     # distance matrix
     dist_matrix = fill_distance_matrix(template_prot)
-    # low and hich level matrices
+    # low and high level matrices
     row_names_query = test_seq
     n_atoms_template = template_prot.get_length()
     mat_shape = (len(row_names_query), n_atoms_template)
     
-    ####-------------    SET UP MATRICES    -------------####
+    # create low-level-matrix
+    global_L_mat = fill_low_level_matrix(mat_shape, dist_matrix, dope_scores,
+                                         test_seq, 0, 0, GAP_PENALTY)
+    print(global_L_mat)
     
     
     
