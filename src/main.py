@@ -276,7 +276,7 @@ def fill_distance_matrix(template_prot):
     return distance_matrix
 
 
-def fill_low_level_matrix(shape, dist_matrix, dope_matrix, 
+def fill_ll_matrix(shape, dist_matrix, dope_matrix, 
                           test_sequence, gap_penalty, i, j):
     """Fill and return a singular low-level matrix for the start point [i, j].
 
@@ -329,18 +329,47 @@ def fill_low_level_matrix(shape, dist_matrix, dope_matrix,
     return L_mat
 
 
-def create_global_low_level(shape, dist_matrix, dope_matrix, 
+def create_global_ll_matrix(shape, dist_matrix, dope_matrix, 
                             test_sequence, gap_penalty):
-    """Create the super-low-level matrix filled with each low-level matrix"""
+    """Create the super low-level matrix filled with each low-level matrix"""
     # initialise global matrix
     global_L_mat = np.empty(shape, dtype=object)
     # for each cell, create a low-level matrix
     for i in range(shape[0]):
         for j in range(shape[1]):
-            L_mat = fill_low_level_matrix(shape, dist_matrix, dope_matrix,
+            L_mat = fill_ll_matrix(shape, dist_matrix, dope_matrix,
                             test_sequence, gap_penalty, i, j)
             global_L_mat[i, j] = L_mat
     return global_L_mat
+
+
+def get_best_score_ll_matrix(global_L_mat, i, j):
+    # initialise score with high number
+    best_score = np.inf
+    # for each of the low level matrices
+    for k in range(global_L_mat.shape[0]):
+        for l in range(global_L_mat.shape[1]):
+            current_score = global_L_mat[k, l][i, j]
+            # choose the lowest score
+            if current_score < best_score:
+                best_score = current_score
+    return best_score
+
+
+
+def fill_hl_matrix(shape, global_L_mat, gap_penalty):
+    H_mat = initialise_matrix(shape)
+    # run through high level matrix
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            # get the best low-level matrix score
+            best_score = get_best_score_ll_matrix(global_L_mat, i, j)
+            # calculate minimum score
+            H_mat[i, j] = min(H_mat[i-1, j-1] + best_score,
+                              H_mat[i, j-1] + gap_penalty,
+                              H_mat[i-1, j] + gap_penalty)            
+    return H_mat   
+            
             
             
         
@@ -383,31 +412,14 @@ if __name__ == "__main__":
     n_atoms_template = template_prot.get_length()
     mat_shape = (len(row_names_query), n_atoms_template)
     
-    # create low-level-matrix
-    global_L_mat = create_global_low_level(mat_shape, dist_matrix,
+    # low-level-matrix
+    global_L_mat = create_global_ll_matrix(mat_shape, dist_matrix,
                                            dope_scores, test_seq, GAP_PENALTY)
+    # high-level matrix
+    H_mat = fill_hl_matrix(mat_shape, global_L_mat, GAP_PENALTY)
+    print(H_mat)
     
     
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    low_lvl_mat = initialise_matrix(mat_shape)
-    high_lvl_mat = initialise_matrix(mat_shape)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-            
-
