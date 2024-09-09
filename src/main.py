@@ -144,8 +144,8 @@ def get_dtf_from_dope_file(file_path):
     colnames = ["res1", "atom1", "res2", "atom2"] + anstrom_len
     dope_mat_full = pd.read_csv(file_path, sep=" ", names=colnames)
     # keep only carbon alpha dope scores
-    line_ca_ca = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
-    dope_mat_ca = dope_mat_full[line_ca_ca]
+    mask = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
+    dope_mat_ca = dope_mat_full[mask]
     # change 3-letter amino-acid code to 1-letter
     dope_mat_ca.loc[:, "res1"] = [seq1(res) for res in dope_mat_ca["res1"]]
     dope_mat_ca.loc[:, "res2"] = [seq1(res) for res in dope_mat_ca["res2"]]
@@ -340,8 +340,8 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
             # calculate minimum score
             L_mat[k, l] = min(
                 L_mat[k-1, l-1] + score,
-                L_mat[k, l-1] + gap_penalty,
-                L_mat[k-1, l] + gap_penalty)
+                L_mat[k, l-1] + score + gap_penalty,
+                L_mat[k-1, l] + score + gap_penalty)
     #return matrix
     return L_mat
 
@@ -488,9 +488,7 @@ if __name__ == "__main__":
     H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
     # print alignment
     alignment = backtracking(path_mat, test_seq, template_prot)
-    
-    print(fill_LL_matrix(mat_shape, dist_matrix,
-                                           dope_scores, test_seq, GAP_PENALTY, 3, 1))
+    print(alignment)
     
     
     
