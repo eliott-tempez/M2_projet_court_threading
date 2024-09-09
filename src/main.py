@@ -20,7 +20,6 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 from Bio.SeqUtils import seq1
-import copy
 
 
 DOPE_FILE = "data/dope.par"
@@ -298,9 +297,9 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     Returns:
         float: score for the corresponding cell
     """
-    # if on the same line/column as fixed cell, impossible, score is 0
+    # if on the same line impossible, score is 0
     # (because we place the same residue on 2 spots, which is impossible)
-    if k == i or l == j:
+    if k == i:
         return 0
     # if out of reach, return infinite number to force best path
     elif (k < i and l > j) or (k > i and l < j):
@@ -491,7 +490,7 @@ if __name__ == "__main__":
     alignment = backtracking(path_mat, test_seq, template_prot)
     
     print(fill_LL_matrix(mat_shape, dist_matrix,
-                                           dope_scores, test_seq, GAP_PENALTY, 1, 3))
+                                           dope_scores, test_seq, GAP_PENALTY, 3, 1))
     
     
     
