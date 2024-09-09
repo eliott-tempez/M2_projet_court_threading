@@ -20,6 +20,7 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 from Bio.SeqUtils import seq1
+import copy
 
 
 DOPE_FILE = "data/dope.par"
@@ -316,7 +317,7 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
         shape (tuple): shape of the matrix
         dist_matrix (np.ndarray): distance matrix for the template
         dope_matrix (pd.DataFrame): dataframe of the dope scores
-        test_sequence (list): list of residues in the test sequence
+        test_sequence (str): residues in the test sequence
         gap_penalty (int): gap penalty
         i (int): line number of the fixed point for this matrix
         j (int): column number of the fixed point for this matrix
@@ -354,7 +355,7 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
         shape (tuple): shape of the matrix
         dist_matrix (np.ndarray): distance matrix for the template
         dope_matrix (pd.DataFrame): dataframe of the dope scores
-        test_sequence (list): list of residues in the test sequence
+        test_sequence (str): residues sequence in the test sequence
         gap_penalty (int): gap penalty
 
     Returns:
@@ -402,7 +403,7 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
         align_mat (np.ndarray) : the matrix with one of the optimum paths
     """
     H_mat = initialise_matrix(shape)
-    align_mat = np.empty(shape)
+    align_mat = initialise_matrix(shape)
     # run through high level matrix
     for i in range(shape[0]):
         for j in range(shape[1]):
@@ -413,26 +414,51 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
                               H_mat[i, j-1] + gap_penalty,
                               H_mat[i-1, j] + gap_penalty)
             # mark corresponding path in the other matrix
-            if H_mat[i, j] == H_mat[i-1, j-1] + score:
+            in_matrix = i in range(shape[0]) and j in range(shape[1])
+            if in_matrix and H_mat[i, j] == H_mat[i-1, j-1] + score:
                 align_mat[i, j] = 1
-            elif H_mat[i, j] == H_mat[i, j-1] + gap_penalty:
+            elif in_matrix and H_mat[i, j] == H_mat[i, j-1] + gap_penalty:
                 align_mat[i, j] = 2
-            elif H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
+            elif in_matrix and H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
                 align_mat[i, j] = 3
     return H_mat, align_mat 
+        
+                
+def backtracking(align_mat, sequence, template_prot):
+    """Backtrack high-level matrix to get aligment.
 
+    Args:
+        align_mat (np.ndarray) : matrix with one of the optimum paths
+        sequence (str): residues in the test sequence
+        template_prot (Protein): template protein
 
-    
-
-
-
-
-
-
-
-
-
-
+    Returns:
+        str: one of the optimum alignments
+    """
+    seq_aligned_reverse = ""
+    res_aligned_reverse = ""
+    # start from end point and go back in matrix
+    len_seq = len(sequence)
+    len_prot = template_prot.get_length()
+    i, j = len_seq-1, len_prot-1
+    while i > 0 and j > 0:
+        if align_mat[i, j] == 1:
+           seq_aligned_reverse += sequence[i]
+           res_aligned_reverse += str(j)
+           i -= 1
+           j -= 1
+        elif align_mat[i, j] == 2:
+            seq_aligned_reverse += "-"
+            res_aligned_reverse += str(j)
+            j -= 1
+        elif align_mat[i, j] == 3:
+            seq_aligned_reverse += sequence[i]
+            res_aligned_reverse += "-"
+            i -= 1
+        else:
+            break
+    return f"{seq_aligned_reverse[::-1]}\n{res_aligned_reverse[::-1]}"
+            
 
 
 ##############################################################################
@@ -461,8 +487,11 @@ if __name__ == "__main__":
                                            dope_scores, test_seq, GAP_PENALTY)
     # build high-level matrix
     H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
-    print(H_mat)
-    print(path_mat)
+    # print alignment
+    alignment = backtracking(path_mat, test_seq, template_prot)
+    
+    print(fill_LL_matrix(mat_shape, dist_matrix,
+                                           dope_scores, test_seq, GAP_PENALTY, 1, 3))
     
     
     
