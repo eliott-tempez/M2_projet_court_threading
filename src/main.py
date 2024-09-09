@@ -139,13 +139,13 @@ def get_dtf_from_dope_file(file_path):
     # check if file existe
     check_file_exists(file_path)
     # get the names of the distances corresponding to the dope scores
-    anstrom_len_as_str = np.arange(0.25, 15, 0.5).tolist()
+    anstrom_len = np.arange(0.25, 15, 0.5).tolist()
     # read dope file
-    colnames = ["res1", "atom1", "res2", "atom2"] + anstrom_len_as_str
+    colnames = ["res1", "atom1", "res2", "atom2"] + anstrom_len
     dope_mat_full = pd.read_csv(file_path, sep=" ", names=colnames)
     # keep only carbon alpha dope scores
-    mask = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
-    dope_mat_ca = dope_mat_full[mask]
+    line_ca_ca = (dope_mat_full["atom1"] == "CA") & (dope_mat_full["atom2"] == "CA")
+    dope_mat_ca = dope_mat_full[line_ca_ca]
     # change 3-letter amino-acid code to 1-letter
     dope_mat_ca.loc[:, "res1"] = [seq1(res) for res in dope_mat_ca["res1"]]
     dope_mat_ca.loc[:, "res2"] = [seq1(res) for res in dope_mat_ca["res2"]]
@@ -167,6 +167,7 @@ def get_query_from_fasta(file_path):
     check_fasta_file(file_path)
     # extract sequence in str form
     seq_str = str(SeqIO.read(file_path, "fasta").seq)
+    # check sequence isn't empty
     check_sequence(file_path, seq_str)
     return seq_str
 
@@ -198,10 +199,11 @@ def get_template_from_pdb(file_path):
                     x = float(line[30:38].strip())
                     y = float(line[38:46].strip())
                     z = float(line[46:54].strip())
+                    # create Atom instance
                     alpha_c = AlphaCarbon(res_nb, x, y, z)
                     # add all alpha carbons to the template protein
                     template.add_residue(alpha_c)
-    # check protein
+    # check protein isn't empty
     check_protein(file_path, template)
     return template
 
@@ -217,7 +219,7 @@ def initialise_matrix(shape):
     Returns:
         np.ndarray: initialised matrix
     """
-    return np.full(shape, 0.0)
+    return np.zeros(shape)
 
 
 def fill_distance_matrix(template_prot):
@@ -227,7 +229,7 @@ def fill_distance_matrix(template_prot):
         template_prot (Protein): template protein
 
     Returns:
-        np.ndarrat: distance matrix
+        np.ndarray: distance matrix
     """
     n = template_prot.get_length()
     distance_matrix = initialise_matrix((n, n))
@@ -245,7 +247,7 @@ def get_dope_score(dope_mat, res1, res2, distance):
 
     Args:
         dope_mat (pd.DataFrame): the dope scores dataframe
-        res1 (str): name of the first residue (3-letter in all caps)
+        res1 (str): name of the first residue (1-letter)
         res2 (str): name of the second residue
         distance (float): distance between the two residues in angstroms
 
@@ -253,6 +255,7 @@ def get_dope_score(dope_mat, res1, res2, distance):
         float: corresponding dope score
     """
     check_positive_number(distance)
+    # no score if we have only one atom
     if distance == 0:
         return 0
     # return high value if distance too short or too high
@@ -285,16 +288,17 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     """Get the score to add to next cell to fill low-level matrix.
 
     Args:
-        i (int): line number of the fixed point for the matrix
-        j (int): column number of the fixed point for the matrix
-        k (int): line number of the aligned residue in template
-        l (int): column number of the aligned residue in query
+        i (int): line number of the fixed point for the LL matrix
+        j (int): column number of the fixed point for the LL matrix
+        k (int): line number of the current residue in query
+        l (int): column number of the current residue in template
         dope_score (float): corresponding dope score
 
     Returns:
         float: score for the corresponding cell
     """
     # if on the same line/column as fixed cell, impossible, score is 0
+    # (because we place the same residue on 2 spots, which is impossible)
     if k == i or l == j:
         return 0
     # if out of reach, return infinite number to force best path
@@ -322,12 +326,12 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     """
     # initialise matrix
     L_mat = initialise_matrix(shape)
-    n_query = shape[0]
-    n_template = shape[1]
+    len_query = shape[0]
+    len_template = shape[1]
     
     # go through matrix
-    for k in range(n_query):
-        for l in range(n_template):
+    for k in range(len_query):
+        for l in range(len_template):
             dist = dist_matrix[j, l]
             res1 = test_sequence[i]
             res2 = test_sequence[k]
@@ -336,8 +340,8 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
             # calculate minimum score
             L_mat[k, l] = min(
                 L_mat[k-1, l-1] + score,
-                L_mat[k, l-1] + score + gap_penalty,
-                L_mat[k-1, l] + score + gap_penalty)
+                L_mat[k, l-1] + gap_penalty,
+                L_mat[k-1, l] + gap_penalty)
     #return matrix
     return L_mat
 
@@ -354,7 +358,7 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
         gap_penalty (int): gap penalty
 
     Returns:
-       np.ndarray: matrix with the low-level matrix in each of its cells
+       np.ndarray: matrix with the low-level matrices in each of its cells
     """
     # initialise global matrix
     global_L_mat = np.empty(shape, dtype=object)
@@ -368,7 +372,7 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
 
 
 def get_score_HL_matrix(global_L_mat, i, j):
-    """Get the score of each low-level matrix to fill the high-level
+    """Get the score of each low-level matrix to fill the high-level.
 
     Args:
         global_L_mat (np.ndarray): 'super' low-level matrix
@@ -395,7 +399,7 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
 
     Returns:
         H_mat (np.ndarray): the high-level matrix
-        align_mat (np.ndarray) : the matrix with the optimum path
+        align_mat (np.ndarray) : the matrix with one of the optimum paths
     """
     H_mat = initialise_matrix(shape)
     align_mat = np.empty(shape)
@@ -406,29 +410,18 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
             score = get_score_HL_matrix(global_L_mat, i, j)
             # calculate minimum score
             H_mat[i, j] = min(H_mat[i-1, j-1] + score,
-                              H_mat[i, j-1] + score + gap_penalty,
-                              H_mat[i-1, j] + score + gap_penalty)
+                              H_mat[i, j-1] + gap_penalty,
+                              H_mat[i-1, j] + gap_penalty)
             # mark corresponding path in the other matrix
             if H_mat[i, j] == H_mat[i-1, j-1] + score:
                 align_mat[i, j] = 1
-            elif H_mat[i, j] == H_mat[i, j-1] + score + gap_penalty:
+            elif H_mat[i, j] == H_mat[i, j-1] + gap_penalty:
                 align_mat[i, j] = 2
-            elif H_mat[i, j] == H_mat[i-1, j] + score + gap_penalty:
+            elif H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
                 align_mat[i, j] = 3
     return H_mat, align_mat 
 
 
-
- 
-            
-            
-            
-        
-    
-                    
-                
-            
-        
     
 
 
@@ -463,10 +456,10 @@ if __name__ == "__main__":
     n_atoms_template = template_prot.get_length()
     mat_shape = (len(row_names_query), n_atoms_template)
     
-    # low-level-matrix
+    # build 'super' low-level-matrix
     global_L_mat = create_global_LL_matrix(mat_shape, dist_matrix,
                                            dope_scores, test_seq, GAP_PENALTY)
-    # high-level matrix
+    # build high-level matrix
     H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
     print(H_mat)
     print(path_mat)
