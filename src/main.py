@@ -123,13 +123,6 @@ def check_positive_number(number):
     """Check if a number is greater than zero"""
     assert number >= 0, f"Error : a distance cannot be negative, \
         check your pdb file"
-    
-    
-def check_matrix_init_value(value):
-    value_is_number = isinstance(value, (int, float))
-    value_is_inf = np.isinf(value)
-    assert value_is_number or value_is_inf, f"Error : matrix should \
-        be initiated with a number or infinite value"
 
 
 
@@ -215,6 +208,38 @@ def get_template_from_pdb(file_path):
 
 ####----------------------      HANDLE MATRICES      ---------------------####
 
+def initialise_matrix(shape):
+    """Initialise numpy matrix of given shape with 0
+
+    Args:
+        shape (tuple): shape of the matrix (nb of lines, nb of columns)
+
+    Returns:
+        np.ndarray: initialised matrix
+    """
+    return np.full(shape, 0.0)
+
+
+def fill_distance_matrix(template_prot):
+    """Create a distance matrix for all pairwise distances in the template.
+
+    Args:
+        template_prot (Protein): template protein
+
+    Returns:
+        np.ndarrat: distance matrix
+    """
+    n = template_prot.get_length()
+    distance_matrix = initialise_matrix((n, n))
+    # calculate all distances between alpha carbons in the protein
+    for i in range(n):
+        for j in range(n):
+            if i !=j:
+                dist = template_prot.calculate_inter_ca_distance(i, j)
+                distance_matrix[i, j] = round(dist, 2)
+    return distance_matrix
+
+
 def get_dope_score(dope_mat, res1, res2, distance):
     """Get corresponding dope score from dope dataframe.
 
@@ -228,12 +253,11 @@ def get_dope_score(dope_mat, res1, res2, distance):
         float: corresponding dope score
     """
     check_positive_number(distance)
-    # return high value if distance too short
-    if distance < 0.25:
-        return 10
-    # return null value if distance too high
-    elif distance > 14.75:
+    if distance == 0:
         return 0
+    # return high value if distance too short or too high
+    elif distance < 0.25 or distance > 14.75:
+        return 10
     # if we have the exact distance in the dope dataframe, return value
     elif distance in dope_mat.columns:
         line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
@@ -255,120 +279,147 @@ def get_dope_score(dope_mat, res1, res2, distance):
                                             (distance_above - distance_below)) * 
                                             (score_above - score_below))
         return round(score_interpolated, 2)
+    
+    
+def get_score_for_LL_cell(i, j, k, l, dope_score):
+    """Get the score to add to next cell to fill low-level matrix.
+
+    Args:
+        i (int): line number of the fixed point for the matrix
+        j (int): column number of the fixed point for the matrix
+        k (int): line number of the aligned residue in template
+        l (int): column number of the aligned residue in query
+        dope_score (float): corresponding dope score
+
+    Returns:
+        float: score for the corresponding cell
+    """
+    # if on the same line/column as fixed cell, impossible, score is 0
+    if k == i or l == j:
+        return 0
+    # if out of reach, return infinite number to force best path
+    elif (k < i and l > j) or (k > i and l < j):
+        return np.inf
+    # for all else, return dope score
+    return dope_score
 
 
-def initialise_matrix(shape, value=0.0):
-    """Initialise numpy matrix of given shape with chosen value"""
-    check_matrix_init_value(value)
-    return np.full(shape, value)
-
-
-def fill_distance_matrix(template_prot):
-    """Create a distance matrix for all pairwise distances in the template."""
-    n = template_prot.get_length()
-    distance_matrix = initialise_matrix((n, n))
-    # calculate all distances between alpha carbons in the protein
-    for i in range(n):
-        for j in range(n):
-            if i !=j:
-                dist = template_prot.calculate_inter_ca_distance(i, j)
-                distance_matrix[i, j] = round(dist, 2)
-    return distance_matrix
-
-
-def fill_ll_matrix(shape, dist_matrix, dope_matrix, 
+def fill_LL_matrix(shape, dist_matrix, dope_matrix, 
                           test_sequence, gap_penalty, i, j):
-    """Fill and return a singular low-level matrix for the start point [i, j].
+    """Fill and return a singular low-level matrix for the fixed point [i, j].
 
     Args:
         shape (tuple): shape of the matrix
         dist_matrix (np.ndarray): distance matrix for the template
         dope_matrix (pd.DataFrame): dataframe of the dope scores
         test_sequence (list): list of residues in the test sequence
-        i (int): line number of the start point for this matrix
-        j (int): column number of the start point for this matrix
         gap_penalty (int): gap penalty
+        i (int): line number of the fixed point for this matrix
+        j (int): column number of the fixed point for this matrix
 
     Returns:
-        np.ndarray: low-level matrix for the start point [i, j]
+        np.ndarray: low-level matrix for the fixed point [i, j]
     """
-    # fill matrix with inf because we won't fill some areas 
-    # and the goal is to minimise
+    # initialise matrix
     L_mat = initialise_matrix(shape)
     n_query = shape[0]
     n_template = shape[1]
     
-    L_mat[i, j] = 0
-    # fill matrix area before the starting point 
-    # but avoid the two residues next to starting point
-    for k in range(i-3, -1, -1):
-        for l in range(j-3, -1, -1):
+    # go through matrix
+    for k in range(n_query):
+        for l in range(n_template):
             dist = dist_matrix[j, l]
             res1 = test_sequence[i]
             res2 = test_sequence[k]
-            score = get_dope_score(dope_matrix, res1, res2, dist)
-            # calculate minimum score
-            L_mat[k, l] = min(
-                L_mat[k+1, l+1] + score,
-                L_mat[k, l+1] + gap_penalty,
-                L_mat[k+1, l] + gap_penalty)
-            
-    # fill matrix area after the starting point
-    for k in range(i+3, shape[0]):
-        for l in range(j+3, shape[1]):
-            dist = dist_matrix[j, l]
-            res1 = test_sequence[i]
-            res2 = test_sequence[k]
-            score = get_dope_score(dope_matrix, res1, res2, dist)
+            dope_score = get_dope_score(dope_matrix, res1, res2, dist)
+            score = get_score_for_LL_cell(i, j, k, l, dope_score)
             # calculate minimum score
             L_mat[k, l] = min(
                 L_mat[k-1, l-1] + score,
-                L_mat[k, l-1] + gap_penalty,
-                L_mat[k-1, l] + gap_penalty)
+                L_mat[k, l-1] + score + gap_penalty,
+                L_mat[k-1, l] + score + gap_penalty)
     #return matrix
     return L_mat
 
 
-def create_global_ll_matrix(shape, dist_matrix, dope_matrix, 
+def create_global_LL_matrix(shape, dist_matrix, dope_matrix, 
                             test_sequence, gap_penalty):
-    """Create the super low-level matrix filled with each low-level matrix"""
+    """Create the 'super' matrix filled with each low-level matrix.
+
+    Args:
+        shape (tuple): shape of the matrix
+        dist_matrix (np.ndarray): distance matrix for the template
+        dope_matrix (pd.DataFrame): dataframe of the dope scores
+        test_sequence (list): list of residues in the test sequence
+        gap_penalty (int): gap penalty
+
+    Returns:
+       np.ndarray: matrix with the low-level matrix in each of its cells
+    """
     # initialise global matrix
     global_L_mat = np.empty(shape, dtype=object)
     # for each cell, create a low-level matrix
     for i in range(shape[0]):
         for j in range(shape[1]):
-            L_mat = fill_ll_matrix(shape, dist_matrix, dope_matrix,
+            L_mat = fill_LL_matrix(shape, dist_matrix, dope_matrix,
                             test_sequence, gap_penalty, i, j)
             global_L_mat[i, j] = L_mat
     return global_L_mat
 
 
-def get_best_score_ll_matrix(global_L_mat, i, j):
-    # initialise score with high number
-    best_score = np.inf
-    # for each of the low level matrices
-    for k in range(global_L_mat.shape[0]):
-        for l in range(global_L_mat.shape[1]):
-            current_score = global_L_mat[k, l][i, j]
-            # choose the lowest score
-            if current_score < best_score:
-                best_score = current_score
-    return best_score
+def get_score_HL_matrix(global_L_mat, i, j):
+    """Get the score of each low-level matrix to fill the high-level
+
+    Args:
+        global_L_mat (np.ndarray): 'super' low-level matrix
+        i (int): line number of the fixed point for the low-level matrix
+        j (int): column number of the fixed point for the low-level matrix
+
+    Returns:
+        float: score of the corresponding low-level matrix
+    """
+    # for the corresponding low level matrix
+    nrow = global_L_mat.shape[0]
+    ncol = global_L_mat.shape[1]
+    # return the LL matrix score
+    return global_L_mat[i, j][nrow-1, ncol-1]
 
 
+def fill_HL_matrix(shape, global_L_mat, gap_penalty):
+    """Create and fill the high-level matrix, and store the path.
 
-def fill_hl_matrix(shape, global_L_mat, gap_penalty):
+    Args:
+        shape (tuple): shape of the matrix
+        global_L_mat (np.ndarray): 'super' low-level matrix
+        gap_penalty (int): gap penalty
+
+    Returns:
+        H_mat (np.ndarray): the high-level matrix
+        align_mat (np.ndarray) : the matrix with the optimum path
+    """
     H_mat = initialise_matrix(shape)
+    align_mat = np.empty(shape)
     # run through high level matrix
     for i in range(shape[0]):
         for j in range(shape[1]):
-            # get the best low-level matrix score
-            best_score = get_best_score_ll_matrix(global_L_mat, i, j)
+            # get the best low-level score
+            score = get_score_HL_matrix(global_L_mat, i, j)
             # calculate minimum score
-            H_mat[i, j] = min(H_mat[i-1, j-1] + best_score,
-                              H_mat[i, j-1] + gap_penalty,
-                              H_mat[i-1, j] + gap_penalty)            
-    return H_mat   
+            H_mat[i, j] = min(H_mat[i-1, j-1] + score,
+                              H_mat[i, j-1] + score + gap_penalty,
+                              H_mat[i-1, j] + score + gap_penalty)
+            # mark corresponding path in the other matrix
+            if H_mat[i, j] == H_mat[i-1, j-1] + score:
+                align_mat[i, j] = 1
+            elif H_mat[i, j] == H_mat[i, j-1] + score + gap_penalty:
+                align_mat[i, j] = 2
+            elif H_mat[i, j] == H_mat[i-1, j] + score + gap_penalty:
+                align_mat[i, j] = 3
+    return H_mat, align_mat 
+
+
+
+ 
             
             
             
@@ -413,11 +464,12 @@ if __name__ == "__main__":
     mat_shape = (len(row_names_query), n_atoms_template)
     
     # low-level-matrix
-    global_L_mat = create_global_ll_matrix(mat_shape, dist_matrix,
+    global_L_mat = create_global_LL_matrix(mat_shape, dist_matrix,
                                            dope_scores, test_seq, GAP_PENALTY)
     # high-level matrix
-    H_mat = fill_hl_matrix(mat_shape, global_L_mat, GAP_PENALTY)
+    H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
     print(H_mat)
+    print(path_mat)
     
     
     
