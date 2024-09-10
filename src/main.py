@@ -1,4 +1,5 @@
-"""This program is a threading program, a method used to model proteins
+"""
+This program is a threading program, a method used to model proteins
 which have the same fold as proteins of known structures. It is based
 on "double" dynamic programming, as explained in Jones et al. (1995).
 
@@ -36,8 +37,17 @@ DOPE_FILE = "data/dope.par"
 ##############################################################################
 
 class AlphaCarbon:
-    """Information on alpha carbons in a 3D structure"""
+    """Information on alpha carbons in a 3D structure."""
+
     def __init__(self, res_number, x, y, z):
+        """Alpha carbon constructor.
+
+        Args:
+            res_number (int): residue number
+            x (int): x coordinate
+            y (int): y coordinate
+            z (int): z coordinate
+        """
         self.atom_name = str(res_number)
         # coordinates
         self.x = x
@@ -45,7 +55,7 @@ class AlphaCarbon:
         self.z = z
 
     def calculate_distance(self, carbon2):
-        """Calculate the distance in angstroms between 2 alpha carbons"""
+        """Calculate the distance in angstroms between 2 alpha carbons."""
         return math.sqrt((carbon2.x-self.x)**2 +
                          (carbon2.y-self.y)**2 +
                          (carbon2.z-self.z)**2)
@@ -53,7 +63,9 @@ class AlphaCarbon:
 
 class Protein:
     """Protein class which includes all alpha carbons."""
+
     def __init__(self):
+        """Protein constructor."""
         # list of alpha carbons
         self.carbon_list = []
 
@@ -90,45 +102,52 @@ class Protein:
 
 ####-----------------------      HANDLE ERRORS      ----------------------####
 def check_file_exists(file_path):
-    """Check if file exists"""
+    """Check if file exists."""
     fils_exists = os.path.isfile(file_path)
     assert fils_exists, f"Error : The file '{file_path}' doesn't exist"
 
 
 def check_pdb_file(file_path):
-    """Check if pdb file is conform"""
+    """Check if pdb file is conform."""
     is_pdb = file_path.split(".")[-1] == "pdb"
     assert is_pdb, f"Error : The file '{file_path}' is not a pdb file"
 
 
 def check_fasta_file(file_path):
-    """Check if fasta file is conform"""
+    """Check if fasta file is conform."""
     is_fasta = file_path.split(".")[-1] in ["fasta", "fa"]
     assert is_fasta, f"Error : The file '{file_path}' is not a fasta file"
 
 
 def check_sequence(file_path, seq):
-    """Check if sequence contains residues:
-       if not, the problem is the fasta file"""
+    """Check if sequence contains residues.
+    If not, the problem is the fasta file
+    """
     seq_not_empty = seq != ""
     assert seq_not_empty, f"Error : The fasta file '{file_path}' is empty"
 
 
 def check_protein(file_path, protein):
-    """Check if protein contains atoms:
-    if not, the problem is the pdb file"""
+    """Check if protein contains atoms.
+    If not, the problem is the pdb file
+    """
     prot_not_empty = protein.carbon_list != []
     assert prot_not_empty, f"Error : The pdb file '{file_path}' is not valid"
 
 
 def check_positive_number(number):
-    """Check if a number is greater than zero"""
+    """Check if a number is greater than zero."""
     assert number >= 0, f"Error : a distance cannot be negative, \
         check your pdb file"
 
 
 ####------------------------      READ ARGS      -------------------------####
 def read_args():
+    """Read and return command line arguments.
+
+    Returns:
+        argparse.Namespace: command lign arguments
+    """
     descr = "Threading program for protein modeling \
         based on double dynamic programming."
     parser = argparse.ArgumentParser(description=descr)
@@ -230,7 +249,7 @@ def get_template_from_pdb(file_path):
 
 ####----------------------      HANDLE MATRICES      ---------------------####
 def initialise_matrix(shape):
-    """Initialise numpy matrix of given shape with 0
+    """Initialise numpy matrix of given shape with 0.
 
     Args:
         shape (tuple): shape of the matrix (nb of lines, nb of columns)
