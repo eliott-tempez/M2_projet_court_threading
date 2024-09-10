@@ -21,12 +21,12 @@ __date__ = "2024-09-11"
 
 
 import os
+import argparse
 import math
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
 from Bio.SeqUtils import seq1
-import argparse
 
 
 DOPE_FILE = "data/dope.par"
@@ -297,29 +297,28 @@ def get_dope_score(dope_mat, res1, res2, distance):
     if distance == 0:
         return 0
     # return high value if distance too short or too high
-    elif distance < 0.25 or distance > 14.75:
+    if distance < 0.25 or distance > 14.75:
         return 10
     # if we have the exact distance in the dope dataframe, return value
-    elif distance in dope_mat.columns:
+    if distance in dope_mat.columns:
         line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) &
                                  (dope_mat["res2"] == max(res1, res2))]
         return line_dope_mat[distance].iloc[0]
     # if we don't, apply an affine function
-    else:
-        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) &
-                                 (dope_mat["res2"] == max(res1, res2))]
-        # extract distances in dataframe surrounding our distance value
-        numeric_columns = [col for col in dope_mat.columns
-                           if isinstance(col, (int, float))]
-        distance_below = max([x for x in numeric_columns if x < distance])
-        distance_above = min([x for x in numeric_columns if x > distance])
-        score_below = line_dope_mat[distance_below].iloc[0]
-        score_above = line_dope_mat[distance_above].iloc[0]
-        # return proportional dope score
-        score_inter = score_below + (((distance - distance_below) /
-                                      (distance_above - distance_below)) *
-                                     (score_above - score_below))
-        return round(score_inter, 2)
+    line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) &
+                                (dope_mat["res2"] == max(res1, res2))]
+    # extract distances in dataframe surrounding our distance value
+    numeric_columns = [col for col in dope_mat.columns
+                        if isinstance(col, (int, float))]
+    distance_below = max([x for x in numeric_columns if x < distance])
+    distance_above = min([x for x in numeric_columns if x > distance])
+    score_below = line_dope_mat[distance_below].iloc[0]
+    score_above = line_dope_mat[distance_above].iloc[0]
+    # return proportional dope score
+    score_inter = score_below + (((distance - distance_below) /
+                                    (distance_above - distance_below)) *
+                                    (score_above - score_below))
+    return round(score_inter, 2)
 
 
 def get_score_for_LL_cell(i, j, k, l, dope_score):
