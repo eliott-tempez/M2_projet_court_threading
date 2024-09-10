@@ -297,12 +297,12 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     Returns:
         float: score for the corresponding cell
     """
-    # if on the same line impossible, score is 0
-    # (because we place the same residue on 2 spots, which is impossible)
+    # if on the same line, score is 0
+    # (we place the same residue on 2 spots, which is impossible)
     if k == i:
         return 0
-    # if out of reach, return infinite number to force best path
-    elif (k < i and l > j) or (k > i and l < j):
+    # if out of reach, add infinite number to force best path
+    if (k < i and l > j) or (k > i and l < j):
         return np.inf
     # for all else, return dope score
     return dope_score
@@ -329,19 +329,38 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     len_query = shape[0]
     len_template = shape[1]
     
+    # initialise first line and column
+    dist_init = dist_matrix[j, 0]
+    res1_init = test_sequence[i]
+    res2_init = test_sequence[0]
+    dope_score_init = get_dope_score(dope_matrix, 
+                                     res1_init, res2_init, dist_init)
+    L_mat[0, 0] = get_score_for_LL_cell(i, j, 0, 0, dope_score_init)
+    L_mat[1:, 0] = [L_mat[0, 0] + k * gap_penalty for k in range(1, len_query)]
+    L_mat[0, 1:] = [L_mat[0, 0] + l * gap_penalty for l in range(1, len_template)]
+    
     # go through matrix
     for k in range(len_query):
         for l in range(len_template):
-            dist = dist_matrix[j, l]
-            res1 = test_sequence[i]
-            res2 = test_sequence[k]
-            dope_score = get_dope_score(dope_matrix, res1, res2, dist)
-            score = get_score_for_LL_cell(i, j, k, l, dope_score)
-            # calculate minimum score
-            L_mat[k, l] = min(
-                L_mat[k-1, l-1] + score,
-                L_mat[k, l-1] + score + gap_penalty,
-                L_mat[k-1, l] + score + gap_penalty)
+            # if out of reach, add infinite number to force best path
+            if (k < i and l > j) or (k > i and l < j):
+                L_mat[k, l] += np.inf
+            # skip lines already filled
+            if (k > 0) and (l > 0):
+                dist = dist_matrix[j, l]
+                res1 = test_sequence[i]
+                res2 = test_sequence[k]
+                dope_score = get_dope_score(dope_matrix, res1, res2, dist)
+                score = get_score_for_LL_cell(i, j, k, l, dope_score)
+                # if out of reach, add infinite number to force best path
+                if (k < i and l > j) or (k > i and l < j):
+                    L_mat[k, l] += np.inf
+                # calculate minimum score
+                else:
+                    L_mat[k, l] = min(
+                        L_mat[k-1, l-1] + score,
+                        L_mat[k, l-1] + gap_penalty,
+                        L_mat[k-1, l] + gap_penalty)
     #return matrix
     return L_mat
 
@@ -489,7 +508,7 @@ if __name__ == "__main__":
     # print alignment
     alignment = backtracking(path_mat, test_seq, template_prot)
     print(alignment)
-    
+    print(global_L_mat[5, 5])
     
     
     
