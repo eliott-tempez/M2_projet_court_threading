@@ -9,6 +9,10 @@ Usage:
     argument1: a fasta file of the protein sequence you want to model
     argument2: a pdb file of the template protein
     argument3 (optional) : the gap penalty for the alignment, default value 0
+    
+    Returns :
+        The optimal alignment of the sequence and the template protein
+        The total energy of this alignment
 """
 
 __author__ = "Eliott TEMPEZ"
@@ -473,7 +477,7 @@ def backtracking(align_mat, sequence, template_prot):
     len_seq = len(sequence)
     len_prot = template_prot.get_length()
     i, j = len_seq-1, len_prot-1
-    while i > 0 and j > 0:
+    while i >= 0 and j >= 0:
         # if diagonal, add match
         if align_mat[i, j] == 1:
            seq_aligned_reverse += sequence[i]
