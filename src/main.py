@@ -460,20 +460,24 @@ def backtracking(align_mat, sequence, template_prot):
     len_prot = template_prot.get_length()
     i, j = len_seq-1, len_prot-1
     while i > 0 and j > 0:
+        # if diagonal, add match
         if align_mat[i, j] == 1:
            seq_aligned_reverse += sequence[i]
            res_aligned_reverse += str(j)
            i -= 1
            j -= 1
+        # if up, add gap to query
         elif align_mat[i, j] == 2:
             seq_aligned_reverse += "-"
             res_aligned_reverse += str(j)
             j -= 1
         elif align_mat[i, j] == 3:
+        # if left, add gap to template
             seq_aligned_reverse += sequence[i]
             res_aligned_reverse += "-"
             i -= 1
         else:
+            print(f"Error: backtracking matrix non valid")
             break
     return f"{seq_aligned_reverse[::-1]}\n{res_aligned_reverse[::-1]}"
             
@@ -505,10 +509,13 @@ if __name__ == "__main__":
                                            dope_scores, test_seq, GAP_PENALTY)
     # build high-level matrix
     H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
-    # print alignment
+    
+    ####-----------    CALCULATE ALIGNMENT    -----------####
     alignment = backtracking(path_mat, test_seq, template_prot)
+    
+    ####--------------    PRINT RESULTS    --------------####
     print(alignment)
-    print(global_L_mat[5, 5])
+    print(H_mat)
     
     
     
