@@ -1,4 +1,4 @@
-"""This program is a threading program, a method used to model proteins 
+"""This program is a threading program, a method used to model proteins
 which have the same fold as proteins of known structures. It is based
 on "double" dynamic programming, as explained in Jones et al. (1995).
 
@@ -9,7 +9,7 @@ Usage:
     argument1: a fasta file of the protein sequence you want to model
     argument2: a pdb file of the template protein
     argument3 (optional) : the gap penalty for the alignment, default value 0
-    
+
     Returns :
         The optimal alignment of the sequence and the template protein
         The total energy of this alignment
@@ -43,20 +43,20 @@ class AlphaCarbon:
         self.x = x
         self.y = y
         self.z = z
-        
+
     def calculate_distance(self, carbon2):
         """Calculate the distance in angstroms between 2 alpha carbons"""
-        return math.sqrt((carbon2.x-self.x)**2 + 
-                         (carbon2.y-self.y)**2 + 
+        return math.sqrt((carbon2.x-self.x)**2 +
+                         (carbon2.y-self.y)**2 +
                          (carbon2.z-self.z)**2)
-        
-        
+
+
 class Protein:
     """Protein class which includes all alpha carbons."""
     def __init__(self):
-        # list of alpha carbons 
+        # list of alpha carbons
         self.carbon_list = []
-    
+
     def add_residue(self, residue):
         """Add a residue to the protein.
 
@@ -64,11 +64,11 @@ class Protein:
             residue (AphaCarbon): carbon to add at the end of the protein
         """
         self.carbon_list.append(residue)
-    
+
     def get_length(self):
         """Get number of alpha carbons in the protein."""
         return len(self.carbon_list)
-    
+
     def calculate_inter_ca_distance(self, n_ca1, n_ca2):
         """Return distance between two alpha carbons in angstroms.
 
@@ -79,9 +79,10 @@ class Protein:
         Returns:
             float: distance in angstroms
         """
-        return self.carbon_list[n_ca1].calculate_distance(self.carbon_list[n_ca2])
-        
-    
+        c1 = self.carbon_list[n_ca1]
+        c2 = self.carbon_list[n_ca2]
+        return c1.calculate_distance(c2)
+
 
 ##############################################################################
 ###################                FUNCTIONS                ##################
@@ -92,13 +93,13 @@ def check_file_exists(file_path):
     """Check if file exists"""
     fils_exists = os.path.isfile(file_path)
     assert fils_exists, f"Error : The file '{file_path}' doesn't exist"
-    
+
 
 def check_pdb_file(file_path):
     """Check if pdb file is conform"""
     is_pdb = file_path.split(".")[-1] == "pdb"
     assert is_pdb, f"Error : The file '{file_path}' is not a pdb file"
-    
+
 
 def check_fasta_file(file_path):
     """Check if fasta file is conform"""
@@ -114,11 +115,11 @@ def check_sequence(file_path, seq):
 
 
 def check_protein(file_path, protein):
-    """Check if protein contains atoms: 
-       if not, the problem is the pdb file"""
+    """Check if protein contains atoms:
+    if not, the problem is the pdb file"""
     prot_not_empty = protein.carbon_list != []
     assert prot_not_empty, f"Error : The pdb file '{file_path}' is not valid"
-    
+
 
 def check_positive_number(number):
     """Check if a number is greater than zero"""
@@ -130,16 +131,16 @@ def check_positive_number(number):
 def read_args():
     descr = "Threading program for protein modeling \
         based on double dynamic programming."
-    parser = argparse.ArgumentParser(description = descr)
-    
+    parser = argparse.ArgumentParser(description=descr)
+
     # arguments
     fasta_descr = "fasta file of the protein sequence you want to model"
     pdb_descr = "pdb file of the template protein"
     gap_descr = "gap penalty for the alignment, default value 0"
-     
+
     parser.add_argument("seq_file", type=str, help=fasta_descr)
     parser.add_argument("template_file", type=str, help=pdb_descr)
-    parser.add_argument("gap_penalty", type=float, 
+    parser.add_argument("gap_penalty", type=float,
                         nargs='?', default=0, help=gap_descr)
     args = parser.parse_args()
     return args
@@ -254,7 +255,7 @@ def fill_distance_matrix(template_prot):
     # calculate all distances between alpha carbons in the protein
     for i in range(n):
         for j in range(n):
-            if i !=j:
+            if i != j:
                 dist = template_prot.calculate_inter_ca_distance(i, j)
                 distance_matrix[i, j] = round(dist, 2)
     return distance_matrix
@@ -281,27 +282,27 @@ def get_dope_score(dope_mat, res1, res2, distance):
         return 10
     # if we have the exact distance in the dope dataframe, return value
     elif distance in dope_mat.columns:
-        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
-                        (dope_mat["res2"] == max(res1, res2))]
+        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) &
+                                 (dope_mat["res2"] == max(res1, res2))]
         return line_dope_mat[distance].iloc[0]
     # if we don't, apply an affine function
     else:
-        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) & 
-                        (dope_mat["res2"] == max(res1, res2))]
+        line_dope_mat = dope_mat[(dope_mat["res1"] == min(res1, res2)) &
+                                 (dope_mat["res2"] == max(res1, res2))]
         # extract distances in dataframe surrounding our distance value
-        numeric_columns = [col for col in dope_mat.columns 
+        numeric_columns = [col for col in dope_mat.columns
                            if isinstance(col, (int, float))]
         distance_below = max([x for x in numeric_columns if x < distance])
         distance_above = min([x for x in numeric_columns if x > distance])
         score_below = line_dope_mat[distance_below].iloc[0]
         score_above = line_dope_mat[distance_above].iloc[0]
         # return proportional dope score
-        score_interpolated = score_below + (((distance - distance_below) / 
-                                            (distance_above - distance_below)) * 
-                                            (score_above - score_below))
-        return round(score_interpolated, 2)
-    
-    
+        score_inter = score_below + (((distance - distance_below) /
+                                      (distance_above - distance_below)) *
+                                     (score_above - score_below))
+        return round(score_inter, 2)
+
+
 def get_score_for_LL_cell(i, j, k, l, dope_score):
     """Get the score to add to next cell to fill low-level matrix.
 
@@ -326,8 +327,8 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     return dope_score
 
 
-def fill_LL_matrix(shape, dist_matrix, dope_matrix, 
-                          test_sequence, gap_penalty, i, j):
+def fill_LL_matrix(shape, dist_matrix, dope_matrix,
+                   test_sequence, gap_penalty, i, j):
     """Fill and return a singular low-level matrix for the fixed point [i, j].
 
     Args:
@@ -345,21 +346,21 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     # initialise matrix
     L_mat = initialise_matrix(shape)
     len_query = shape[0]
-    len_template = shape[1]
-    
+    len_prot = shape[1]
+
     # initialise first line and column
     dist_init = dist_matrix[j, 0]
     res1_init = test_sequence[i]
     res2_init = test_sequence[0]
-    dope_score_init = get_dope_score(dope_matrix, 
+    dope_score_init = get_dope_score(dope_matrix,
                                      res1_init, res2_init, dist_init)
     L_mat[0, 0] = get_score_for_LL_cell(i, j, 0, 0, dope_score_init)
     L_mat[1:, 0] = [L_mat[0, 0] + k * gap_penalty for k in range(1, len_query)]
-    L_mat[0, 1:] = [L_mat[0, 0] + l * gap_penalty for l in range(1, len_template)]
-    
+    L_mat[0, 1:] = [L_mat[0, 0] + l * gap_penalty for l in range(1, len_prot)]
+
     # go through matrix
     for k in range(len_query):
-        for l in range(len_template):
+        for l in range(len_prot):
             # if out of reach, add infinite number to force best path
             if (k < i and l > j) or (k > i and l < j):
                 L_mat[k, l] += np.inf
@@ -383,7 +384,7 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     return L_mat
 
 
-def create_global_LL_matrix(shape, dist_matrix, dope_matrix, 
+def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
                             test_sequence, gap_penalty):
     """Create the 'super' matrix filled with each low-level matrix.
 
@@ -403,7 +404,7 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
     for i in range(shape[0]):
         for j in range(shape[1]):
             L_mat = fill_LL_matrix(shape, dist_matrix, dope_matrix,
-                            test_sequence, gap_penalty, i, j)
+                                   test_sequence, gap_penalty, i, j)
             global_L_mat[i, j] = L_mat
     return global_L_mat
 
@@ -457,9 +458,9 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
                 align_mat[i, j] = 2
             elif in_matrix and H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
                 align_mat[i, j] = 3
-    return H_mat, align_mat 
-        
-                
+    return H_mat, align_mat
+
+
 def backtracking(align_mat, sequence, template_prot):
     """Backtrack high-level matrix to get aligment.
 
@@ -480,17 +481,17 @@ def backtracking(align_mat, sequence, template_prot):
     while i >= 0 and j >= 0:
         # if diagonal, add match
         if align_mat[i, j] == 1:
-           seq_aligned_reverse += sequence[i]
-           res_aligned_reverse += str(j)
-           i -= 1
-           j -= 1
+            seq_aligned_reverse += sequence[i]
+            res_aligned_reverse += str(j)
+            i -= 1
+            j -= 1
         # if up, add gap to query
         elif align_mat[i, j] == 2:
             seq_aligned_reverse += "-"
             res_aligned_reverse += str(j)
             j -= 1
         elif align_mat[i, j] == 3:
-        # if left, add gap to template
+            # if left, add gap to template
             seq_aligned_reverse += sequence[i]
             res_aligned_reverse += "-"
             i -= 1
@@ -498,7 +499,6 @@ def backtracking(align_mat, sequence, template_prot):
             print(f"Error: backtracking matrix non valid")
             break
     return f"{seq_aligned_reverse[::-1]}\n{res_aligned_reverse[::-1]}"
-            
 
 
 ##############################################################################
@@ -511,7 +511,7 @@ if __name__ == "__main__":
     seq_file = args.seq_file
     template_file = args.template_file
     GAP_PENALTY = args.gap_penalty
-    
+
     ####------------       READ DATA       -------------####
     # read dope values
     dope_scores = get_dtf_from_dope_file(DOPE_FILE)
@@ -519,7 +519,7 @@ if __name__ == "__main__":
     test_seq = get_query_from_fasta(seq_file)
     # read 3D data
     template_prot = get_template_from_pdb(template_file)
-    
+
     ####-------------    SET UP MATRICES    -------------####
     # distance matrix
     dist_matrix = fill_distance_matrix(template_prot)
@@ -527,20 +527,16 @@ if __name__ == "__main__":
     row_names_query = test_seq
     n_atoms_template = template_prot.get_length()
     mat_shape = (len(row_names_query), n_atoms_template)
-    
+
     # build 'super' low-level-matrix
     global_L_mat = create_global_LL_matrix(mat_shape, dist_matrix,
                                            dope_scores, test_seq, GAP_PENALTY)
     # build high-level matrix
     H_mat, path_mat = fill_HL_matrix(mat_shape, global_L_mat, GAP_PENALTY)
-    
+
     ####-----------    CALCULATE ALIGNMENT    -----------####
     alignment = backtracking(path_mat, test_seq, template_prot)
-    
+
     ####--------------    PRINT RESULTS    --------------####
     print(alignment)
     print(f"Total energy : {round(H_mat[-1, -1], 2)}")
-    
-    
-    
-    
