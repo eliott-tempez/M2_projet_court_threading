@@ -8,6 +8,7 @@ Usage:
 
     argument1: a fasta file of the protein sequence you want to model
     argument2: a pdb file of the template protein
+    argument3 (optional) : the gap penalty for the alignment, default value 0
 """
 
 __author__ = "Eliott TEMPEZ"
@@ -20,14 +21,10 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 from Bio.SeqUtils import seq1
+import argparse
 
 
 DOPE_FILE = "data/dope.par"
-GAP_PENALTY = 0
-#### A SUPPRIMER POUR AJOUTER LES COMMANDES UTILISATEURS
-seq_file = "data/5AWL.fasta"
-template_file = "data/5AWL.pdb"
-
 
 
 ##############################################################################
@@ -125,6 +122,24 @@ def check_positive_number(number):
         check your pdb file"
 
 
+####------------------------      READ ARGS      -------------------------####
+def read_args():
+    descr = "Threading program for protein modeling \
+        based on double dynamic programming."
+    parser = argparse.ArgumentParser(description = descr)
+    
+    # arguments
+    fasta_descr = "fasta file of the protein sequence you want to model"
+    pdb_descr = "pdb file of the template protein"
+    gap_descr = "gap penalty for the alignment, default value 0"
+     
+    parser.add_argument("seq_file", type=str, help=fasta_descr)
+    parser.add_argument("template_file", type=str, help=pdb_descr)
+    parser.add_argument("gap_penalty", type=float, 
+                        nargs='?', default=0, help=gap_descr)
+    args = parser.parse_args()
+    return args
+
 
 ####------------------------      READ FILES      ------------------------####
 def get_dtf_from_dope_file(file_path):
@@ -209,7 +224,6 @@ def get_template_from_pdb(file_path):
 
 
 ####----------------------      HANDLE MATRICES      ---------------------####
-
 def initialise_matrix(shape):
     """Initialise numpy matrix of given shape with 0
 
@@ -488,7 +502,13 @@ def backtracking(align_mat, sequence, template_prot):
 ##############################################################################
 
 if __name__ == "__main__":
-    ####-------------       GET DATA       -------------####
+    ####------------       IMPORT ARGS       ------------####
+    args = read_args()
+    seq_file = args.seq_file
+    template_file = args.template_file
+    GAP_PENALTY = args.gap_penalty
+    
+    ####------------       READ DATA       -------------####
     # read dope values
     dope_scores = get_dtf_from_dope_file(DOPE_FILE)
     # read query sequence
@@ -515,7 +535,7 @@ if __name__ == "__main__":
     
     ####--------------    PRINT RESULTS    --------------####
     print(alignment)
-    print(H_mat)
+    print(f"Total energy : {round(H_mat[-1, -1], 2)}")
     
     
     
