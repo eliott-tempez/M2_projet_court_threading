@@ -43,7 +43,7 @@ class AlphaCarbon:
         """Alpha carbon constructor.
 
         Args:
-            res_number (int): residue number
+            res_number (int): residue number (from 1)
             x (int): x coordinate
             y (int): y coordinate
             z (int): z coordinate
@@ -338,9 +338,6 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     # (we place the same residue on 2 spots, which is impossible)
     if k == i:
         return 0
-    # if out of reach, add infinite number to force best path
-    if (k < i and l >= j) or (k >= i and l < j):
-        return np.inf
     # for all else, return dope score
     return dope_score
 
@@ -363,41 +360,32 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     """
     # initialise matrix
     L_mat = initialise_matrix(shape)
-    len_query = shape[0]
-    len_prot = shape[1]
+    nrow = shape[0]
+    ncol = shape[1]
 
     # initialise first line and column
-    dist_init = dist_matrix[j, 0]
-    res1_init = test_sequence[i]
-    res2_init = test_sequence[0]
-    dope_score_init = get_dope_score(dope_matrix,
-                                     res1_init, res2_init, dist_init)
-    L_mat[0, 0] = get_score_for_LL_cell(i, j, 0, 0, dope_score_init)
-    L_mat[1:, 0] = [L_mat[0, 0] + k * gap_penalty for k in range(1, len_query)]
-    L_mat[0, 1:] = [L_mat[0, 0] + l * gap_penalty for l in range(1, len_prot)]
+    L_mat[1:, 0] = [k * gap_penalty for k in range(1, nrow)]
+    L_mat[0, 1:] = [l * gap_penalty for l in range(1, ncol)]
 
     # go through matrix
-    for k in range(len_query):
-        for l in range(len_prot):
+    for k in range(1, nrow):
+        for l in range(1, ncol):
             # if out of reach, add infinite number to force best path
-            if (k < i and l > j) or (k > i and l < j):
-                L_mat[k, l] += np.inf
+            if (k < i and l >= j) or (k >= i and l < j):
+                L_mat[k, l] = np.inf
             # skip lines already filled
-            if (k > 0) and (l > 0):
-                dist = dist_matrix[j, l]
-                res1 = test_sequence[i]
-                res2 = test_sequence[k]
+            else:
+                # calculate dope score
+                dist = dist_matrix[j-1, l-1]
+                res1 = test_sequence[i-1]
+                res2 = test_sequence[k-1]
                 dope_score = get_dope_score(dope_matrix, res1, res2, dist)
                 score = get_score_for_LL_cell(i, j, k, l, dope_score)
-                # if out of reach, add infinite number to force best path
-                if (k < i and l > j) or (k > i and l < j):
-                    L_mat[k, l] += np.inf
                 # calculate minimum score
-                else:
-                    L_mat[k, l] = min(
-                        L_mat[k-1, l-1] + score,
-                        L_mat[k, l-1] + gap_penalty,
-                        L_mat[k-1, l] + gap_penalty)
+                L_mat[k, l] = min(
+                    L_mat[k-1, l-1] + score,
+                    L_mat[k, l-1] + gap_penalty,
+                    L_mat[k-1, l] + gap_penalty)
     #return matrix
     return L_mat
 
@@ -418,9 +406,9 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
     """
     # initialise global matrix
     global_L_mat = np.empty(shape, dtype=object)
-    # for each cell, create a low-level matrix
-    for i in range(shape[0]):
-        for j in range(shape[1]):
+    # for each cell except first line and column, create a low-level matrix
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
             L_mat = fill_LL_matrix(shape, dist_matrix, dope_matrix,
                                    test_sequence, gap_penalty, i, j)
             global_L_mat[i, j] = L_mat
@@ -457,25 +445,35 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
         H_mat (np.ndarray): the high-level matrix
         align_mat (np.ndarray) : the matrix with one of the optimum paths
     """
+    # initialise matrix
     H_mat = initialise_matrix(shape)
     align_mat = initialise_matrix(shape)
+    nrow = shape[0]
+    ncol = shape[1]
+    
+    # initialise first line and column
+    H_mat[1:, 0] = [k * gap_penalty for k in range(1, nrow)]
+    H_mat[0, 1:] = [l * gap_penalty for l in range(1, ncol)]
+
     # run through high level matrix
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            # get the best low-level score
+    for i in range(1, shape[0]):
+        for j in range(1, shape[1]):
+            # get the corresponding low-level score
             score = get_score_HL_matrix(global_L_mat, i, j)
             # calculate minimum score
             H_mat[i, j] = min(H_mat[i-1, j-1] + score,
                               H_mat[i, j-1] + gap_penalty,
                               H_mat[i-1, j] + gap_penalty)
             # mark corresponding path in the other matrix
-            in_matrix = i in range(shape[0]) and j in range(shape[1])
-            if in_matrix and H_mat[i, j] == H_mat[i-1, j-1] + score:
+            if H_mat[i, j] == H_mat[i-1, j-1] + score:
                 align_mat[i, j] = 1
-            elif in_matrix and H_mat[i, j] == H_mat[i, j-1] + gap_penalty:
+            elif H_mat[i, j] == H_mat[i, j-1] + gap_penalty:
                 align_mat[i, j] = 2
-            elif in_matrix and H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
+            elif H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
                 align_mat[i, j] = 3
+            else:
+                print(f"Error: high-level matrix not valid")
+                break
     return H_mat, align_mat
 
 
@@ -493,24 +491,23 @@ def backtracking(align_mat, sequence, template_prot):
     seq_aligned_reverse = ""
     res_aligned_reverse = ""
     # start from end point and go back in matrix
-    len_seq = len(sequence)
-    len_prot = template_prot.get_length()
-    i, j = len_seq-1, len_prot-1
-    while i >= 0 and j >= 0:
+    i = align_mat.shape[0] - 1
+    j = align_mat.shape[1] - 1
+    while i > 0 and j > 0:
         # if diagonal, add match
         if align_mat[i, j] == 1:
-            seq_aligned_reverse += sequence[i]
-            res_aligned_reverse += str(j)
+            seq_aligned_reverse += sequence[i-1]
+            res_aligned_reverse += str(j)[::-1]
             i -= 1
             j -= 1
         # if up, add gap to query
         elif align_mat[i, j] == 2:
             seq_aligned_reverse += "-"
-            res_aligned_reverse += str(j)
+            res_aligned_reverse += str(j)[::-1]
             j -= 1
         # if left, add gap to template
         elif align_mat[i, j] == 3:
-            seq_aligned_reverse += sequence[i]
+            seq_aligned_reverse += sequence[i-1]
             res_aligned_reverse += "-"
             i -= 1
         else:
@@ -545,7 +542,7 @@ if __name__ == "__main__":
     # low and high level matrices
     row_names_query = test_seq
     n_atoms_template = template_prot.get_length()
-    mat_shape = (len(row_names_query), n_atoms_template)
+    mat_shape = (len(row_names_query) + 1, n_atoms_template + 1)
 
     # build 'super' low-level-matrix
     global_L_mat = create_global_LL_matrix(mat_shape, dist_matrix,
