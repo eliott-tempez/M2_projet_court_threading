@@ -17,7 +17,7 @@ Usage:
 """
 
 __author__ = "Eliott TEMPEZ"
-__date__ = "2024-09-11"
+__date__ = "2024-09-12"
 
 
 import os
@@ -450,8 +450,7 @@ def fill_HL_matrix(shape, global_L_mat, gap_penalty):
             elif H_mat[i, j] == H_mat[i-1, j] + gap_penalty:
                 align_mat[i, j] = 3
             else:
-                print(f"Error: high-level matrix not valid")
-                break
+                raise ValueError(f"Error: high-level matrix not valid")
     return H_mat, align_mat
 
 
@@ -493,8 +492,7 @@ def backtracking(align_mat, sequence, template_prot):
             alignment_line.append(" ")
             i -= 1
         else:
-            print(f"Error: backtracking matrix non valid")
-            break
+            raise ValueError(f"Error: backtracking matrix not valid")
     # return alignment in right order
     seq_aligned_reverse = " ".join(seq_aligned_reverse[::-1])
     res_aligned_reverse = " ".join(res_aligned_reverse[::-1])
