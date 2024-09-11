@@ -538,4 +538,4 @@ if __name__ == "__main__":
 
     ####--------------    PRINT RESULTS    --------------####
     print(alignment)
-    print(f"Total energy : {round(H_mat[-1, -1], 2)}")
+    print(f"Total energy: {round(H_mat[-1, -1], 2)}")
