@@ -1,5 +1,5 @@
 ## Double dynamic programming threading program
-### Eliott TEMPEZ - M2BI - Université Paris Cité
+#### Eliott TEMPEZ - M2BI - Université Paris Cité
 
 *Description*
 
@@ -8,20 +8,20 @@ All fasta and pdb files in the data/proteins/ folder were found on the PDB datab
 To read the full report on this project, you can find a pdf file in the doc/ folder.
 
 
-## How-to
-### Prerequisites (from the current directory, in a linux terminal):
+### How-to
+#### Prerequisites (from the current directory, in a linux terminal):
 * [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 * install the conda environment
 `conda env create -f environment.yaml`
 * activate the conda environment
 `conda activate projet_court_env`
 
-### To align a single protein sequence of interest to a template structure:
+#### To align a single protein sequence of interest to a template structure:
 run the code line:
 `python src/main.py arg1 arg2 (arg3)`
 * arg1 : path to the fasta file of the sequence of interest
 * arg2 : path to the pdb file of the template protein
 * arg3 (optional) : gap penalty
 
-### To run the program on several templates for one sequence of interest:
+#### To run the program on several templates for one sequence of interest:
 
