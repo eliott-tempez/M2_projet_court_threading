@@ -339,7 +339,7 @@ def get_score_for_LL_cell(i, j, k, l, dope_score):
     if k == i:
         return 0
     # if out of reach, add infinite number to force best path
-    if (k < i and l > j) or (k > i and l < j):
+    if (k < i and l >= j) or (k >= i and l < j):
         return np.inf
     # for all else, return dope score
     return dope_score
@@ -508,14 +508,15 @@ def backtracking(align_mat, sequence, template_prot):
             seq_aligned_reverse += "-"
             res_aligned_reverse += str(j)
             j -= 1
+        # if left, add gap to template
         elif align_mat[i, j] == 3:
-            # if left, add gap to template
             seq_aligned_reverse += sequence[i]
             res_aligned_reverse += "-"
             i -= 1
         else:
             print(f"Error: backtracking matrix non valid")
             break
+    # return alignment in right order
     return f"{seq_aligned_reverse[::-1]}\n{res_aligned_reverse[::-1]}"
 
 
