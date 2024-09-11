@@ -5,7 +5,6 @@ channels:
     - nodefaults
 dependencies:
     - python
-    - flask
     - pandas
     - numpy
     - biopython

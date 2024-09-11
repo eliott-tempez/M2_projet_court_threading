@@ -1,26 +1,24 @@
+# Double dynamic programming threading program
+## Eliott TEMPEZ - M2BI - Université Paris Cité
 
-input files:
+*Description*
+
+All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 3 fold classes : all alpha, all beta, and alpha and beta (a+b). They are all between 40 and 60 residues-long. There are 4 proteins per class, meaning the programs were tested on 12 different proteins.
 
 
-prerequisites:
-* install conda
-* install the conda environment (from the current directory):
+## Prerequisites (from the current directory, in a linux terminal):
+* [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
+* install the conda environment
 `conda env create -f environment.yaml`
-* run the code line:
-`python src/main.py arg1 arg2`
+* activate the conda environment
+`conda activate projet_court_env`
 
+### To align a single protein sequence of interest to a template structure:
+run the code line:
+`python src/main.py arg1 arg2 (arg3)`
+* arg1 : path to the fasta file of the sequence of interest
+* arg2 : path to the pdb file of the template protein
+* arg3 (optional) : gap penalty
 
-data obtention : 
-* all reference proteins were found on the database scope 2.08 (revoir pour ajouter les superfamilles ET familles)
-    * iux8 : all alpha - globin like - truncated hemoglobin
-    * 3p4p : all alpha - globin like - Protein Fumarate reductase
-    * 1b90 : all beta - prealbumin like - protein beta amylase
-    * 1h8l : all beta - prealbumin like - Protein Carboxypeptidase D C-terminal domain
-    * 1wyb : multi-domain proteins (alpha and beta) - beta-lactamase/transpeptidase-like - Protein 6-aminohexanoate-dimer hydrolase NylC
-    * 3wrt : multi-domain proteins (alpha and beta) - beta-lactamase/transpeptidase-like - Protein AMPC beta-Lactamase, class C
-    * 1a2p : alpha and beta protein (a+b) - microbial ribonuclease - protein barnase
-    * 1de3 : alpha and beta protein (a+b) - microbial ribonuclease - protein alpha-sarcin
-    * 1btm : alpha and beta proteins (a/b) - TIM alpha/bata barrel - protein triosephosphate isomerase (TIM)
-    * 1jvn : alpha and beta proteins (a/b) - TIM alpha/bata barrel - Protein Cyclase subunit (or domain) of imidazoleglycerolphosphate synthase HisF
+### To run the program on several templates for one sequence of interest:
 
-* dope scores
