@@ -18,7 +18,7 @@ To read the full report on this project, you can find a pdf file in the doc/ fol
 
 #### To align a single protein sequence of interest to a template structure:
 run the code line:
-`python src/main.py arg1 arg2 (arg3)`
+`python src/align_structure.py arg1 arg2 (arg3)`
 * arg1 : path to the fasta file of the sequence of interest
 * arg2 : path to the pdb file of the template protein
 * arg3 (optional) : gap penalty

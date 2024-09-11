@@ -5,7 +5,7 @@ on "double" dynamic programming, as explained in Jones et al. (1995).
 
 Usage:
 ======
-    python main.py argument1 argument2
+    python align_structure.py argument1 argument2
 
     argument1: a fasta file of the protein sequence you want to model
     argument2: a pdb file of the template protein
