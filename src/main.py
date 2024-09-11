@@ -137,7 +137,7 @@ def check_protein(file_path, protein):
 
 def check_positive_number(number):
     """Check if a number is greater than zero."""
-    assert number > 0, f"Error : a distance cannot be null or negative, \
+    assert number >= 0, f"Error : a distance cannot be negative, \
         check your pdb file"
 
 
@@ -293,6 +293,9 @@ def get_dope_score(dope_mat, res1, res2, distance):
         float: corresponding dope score
     """
     check_positive_number(distance)
+    # we can't have only one atom - force infinity
+    if distance == 0:
+        return 0
     # return high value if distance too short or too high
     if distance < 0.25 or distance > 14.75:
         return 10
