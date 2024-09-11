@@ -24,4 +24,7 @@ run the code line:
 * arg3 (optional) : gap penalty
 
 #### To run the program on several templates for one sequence of interest:
-
+`python src/meta_alignment.py arg1 arg2`
+* arg1 : directory path containing pdb files that can be in subdirectories or not
+* arg2 : path to the fasta file of the protein of interest
+This program returns a text file in results/ with all results from the main program *align_structure.py*
