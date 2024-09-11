@@ -137,7 +137,7 @@ def check_protein(file_path, protein):
 
 def check_positive_number(number):
     """Check if a number is greater than zero."""
-    assert number >= 0, f"Error : a distance cannot be negative, \
+    assert number > 0, f"Error : a distance cannot be null or negative, \
         check your pdb file"
 
 
@@ -293,9 +293,6 @@ def get_dope_score(dope_mat, res1, res2, distance):
         float: corresponding dope score
     """
     check_positive_number(distance)
-    # no score if we have only one atom
-    if distance == 0:
-        return 0
     # return high value if distance too short or too high
     if distance < 0.25 or distance > 14.75:
         return 10
@@ -319,27 +316,6 @@ def get_dope_score(dope_mat, res1, res2, distance):
                                     (distance_above - distance_below)) *
                                     (score_above - score_below))
     return round(score_inter, 2)
-
-
-def get_score_for_LL_cell(i, j, k, l, dope_score):
-    """Get the score to add to next cell to fill low-level matrix.
-
-    Args:
-        i (int): line number of the fixed point for the LL matrix
-        j (int): column number of the fixed point for the LL matrix
-        k (int): line number of the current residue in query
-        l (int): column number of the current residue in template
-        dope_score (float): corresponding dope score
-
-    Returns:
-        float: score for the corresponding cell
-    """
-    # if on the same line, score is 0
-    # (we place the same residue on 2 spots, which is impossible)
-    if k == i:
-        return 0
-    # for all else, return dope score
-    return dope_score
 
 
 def fill_LL_matrix(shape, dist_matrix, dope_matrix,
@@ -380,10 +356,9 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
                 res1 = test_sequence[i-1]
                 res2 = test_sequence[k-1]
                 dope_score = get_dope_score(dope_matrix, res1, res2, dist)
-                score = get_score_for_LL_cell(i, j, k, l, dope_score)
                 # calculate minimum score
                 L_mat[k, l] = min(
-                    L_mat[k-1, l-1] + score,
+                    L_mat[k-1, l-1] + dope_score,
                     L_mat[k, l-1] + gap_penalty,
                     L_mat[k-1, l] + gap_penalty)
     #return matrix
