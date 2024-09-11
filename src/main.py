@@ -466,33 +466,40 @@ def backtracking(align_mat, sequence, template_prot):
     Returns:
         str: one of the optimum alignments
     """
-    seq_aligned_reverse = ""
-    res_aligned_reverse = ""
+    seq_aligned_reverse = []
+    res_aligned_reverse = []
+    alignment_line = []
     # start from end point and go back in matrix
     i = align_mat.shape[0] - 1
     j = align_mat.shape[1] - 1
     while i > 0 and j > 0:
         # if diagonal, add match
         if align_mat[i, j] == 1:
-            seq_aligned_reverse += sequence[i-1]
-            res_aligned_reverse += str(j)[::-1]
+            seq_aligned_reverse.append(sequence[i-1] + " " * (len(str(j)) - 1))
+            res_aligned_reverse.append(str(j))
+            alignment_line.append("|" + " " * (len(str(j)) - 1))
             i -= 1
             j -= 1
         # if up, add gap to query
         elif align_mat[i, j] == 2:
-            seq_aligned_reverse += "-"
-            res_aligned_reverse += str(j)[::-1]
+            seq_aligned_reverse.append("-" + " " * (len(str(j)) - 1))
+            res_aligned_reverse.append(str(j))
+            alignment_line.append(" " * (len(str(j))))
             j -= 1
         # if left, add gap to template
         elif align_mat[i, j] == 3:
-            seq_aligned_reverse += sequence[i-1]
-            res_aligned_reverse += "-"
+            seq_aligned_reverse.append(sequence[i-1])
+            res_aligned_reverse.append("-")
+            alignment_line.append(" ")
             i -= 1
         else:
             print(f"Error: backtracking matrix non valid")
             break
     # return alignment in right order
-    return f"{seq_aligned_reverse[::-1]}\n{res_aligned_reverse[::-1]}"
+    seq_aligned_reverse = " ".join(seq_aligned_reverse[::-1])
+    res_aligned_reverse = " ".join(res_aligned_reverse[::-1])
+    alignment_line = " ".join(alignment_line[::-1])
+    return f"{res_aligned_reverse}\n{alignment_line}\n{seq_aligned_reverse}"
 
 
 ##############################################################################
