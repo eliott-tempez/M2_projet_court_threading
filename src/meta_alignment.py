@@ -25,7 +25,7 @@ __date__ = "2024-09-12"
 
 OUTPUT_DIR = "results/"
 # A RETIRER POUR INPUT LIGNE DE COMMANDE
-folder = "data/poteins"
+folder = "data/proteins/"
 query = "1BAL"
 
 
@@ -41,18 +41,18 @@ import os
 def check_parentfold(has_subfolder, has_file, parent_path):
     """Check if general directory contains folder/file (not both or none)"""
     if has_subfolder and has_file:
-        raise ValueError(f"{parent_path} contains folder(s) and file(s) : \
-            should contain only one of the two")
+        raise ValueError(f"{parent_path} contains folder(s) and file(s) : " \
+            "should contain only one of the two")
     elif not has_subfolder and not has_file:
-        raise ValueError(f"{parent_path} empty, should contain \
-            folder(s) or file(s)")
+        raise ValueError(f"{parent_path} empty, should contain " \
+            "folder(s) or file(s)")
 
 
 def check_fasta_or_pdb(filepath):
     """Check if a file is a fasta/pdb file."""
-    is_fasta_or_pdb = filepath.split(";")[-1] in ["fasta", "pdb"]
-    assert is_fasta_or_pdb, "Error : file in (sub)folder should only \
-        be fasta or pdb"
+    is_fasta_or_pdb = filepath.split(".")[-1] in ["fasta", "fa", "pdb"]
+    assert is_fasta_or_pdb, "Error : file in (sub)folder should only " \
+        "be fasta or pdb"
 
         
 
@@ -80,17 +80,20 @@ def check_if_subfolders(parent_path):
         bool: are there subfolders?
     """
     has_subfolder = False
+    has_file = False
     # check if parent path is a folder
     if not os.path.isdir(parent_path):
         raise ValueError("First argument should be path to a directory")
     # check each element in parent path
     for element in os.listdir(parent_path):
-        # check if there's a subdirectory
-        full_path = os.path.join(parent_path, element)
-        if os.path.isdir(full_path):
-            has_subfolder = True
-        else:
-            has_file = True
+        # if not hidden file
+        if not element.startswith("."):
+            # check if there's a subdirectory
+            full_path = os.path.join(parent_path, element)
+            if os.path.isdir(full_path):
+                has_subfolder = True
+            else:
+                has_file = True
     check_parentfold(has_subfolder, has_file, parent_path)
     return has_subfolder
 
@@ -108,7 +111,7 @@ def list_subfolders(parent_path):
     for subfold in os.listdir(parent_path):
         subfolders.append(subfold)
         sub_path = os.path.join(parent_path, subfold)
-        for element in sub_path:
+        for element in os.listdir(sub_path):
             full_path = os.path.join(sub_path, element)
             check_fasta_or_pdb(full_path)
             if os.path.isdir(full_path):
@@ -141,17 +144,17 @@ def get_all_pdb_paths(parent_path):
     Returns:
         list: list of all pdb paths
     """
-    pdb_paths = []
+    pdb_paths = {}
     has_subfolders = check_if_subfolders(parent_path)
     if has_subfolders:
         subfolders = list_subfolders(parent_path)
         for subfold in subfolders:
             sub_path = os.path.join(parent_path, subfold)
-            pdb_paths += [os.path.join(sub_path, pdbfile) for 
-                          pdbfile in extract_pdb_files_from_dir(sub_path)]
+            pdb_paths[subfold] = [os.path.join(sub_path, pdbfile) for
+                                  pdbfile in extract_pdb_files_from_dir(sub_path)]
     else:
-        pdb_paths += [os.path.join(parent_path, pdbfile) for
-                      pdbfile in extract_pdb_files_from_dir(parent_path)]
+        pdb_paths["parent"] = [os.path.join(parent_path, pdbfile) for
+                               pdbfile in extract_pdb_files_from_dir(parent_path)]
     return pdb_paths
         
 
@@ -172,6 +175,4 @@ def get_all_pdb_paths(parent_path):
 if __name__ == "__main__":
     # get all pdb paths
     pdb_paths = get_all_pdb_paths(folder)
-    # if subfolders, get their names
-    if check_if_subfolders(folder):
-        subs = list_subfolders(folder)
+    print(pdb_paths)

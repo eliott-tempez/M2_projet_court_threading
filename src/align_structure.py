@@ -137,8 +137,8 @@ def check_protein(file_path, protein):
 
 def check_positive_number(number):
     """Check if a number is greater than zero."""
-    assert number >= 0, f"Error : a distance cannot be negative, \
-        check your pdb file"
+    assert number >= 0, f"Error : a distance cannot be negative, " \
+        "check your pdb file"
 
 
 ####------------------------      READ ARGS      -------------------------####
@@ -148,8 +148,8 @@ def read_args():
     Returns:
         argparse.Namespace: command lign arguments
     """
-    descr = "Threading program for protein modeling \
-        based on double dynamic programming."
+    descr = "Threading program for protein modeling " \
+        "based on double dynamic programming."
     parser = argparse.ArgumentParser(description=descr)
 
     # arguments
