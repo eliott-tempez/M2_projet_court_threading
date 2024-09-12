@@ -161,7 +161,7 @@ def read_args():
     parser.add_argument("seq_file", type=str, help=fasta_descr)
     parser.add_argument("template_file", type=str, help=pdb_descr)
     parser.add_argument("gap_penalty", type=float,
-                        nargs='?', default=0, help=gap_descr)
+                        nargs="?", default=0, help=gap_descr)
     args = parser.parse_args()
     return args
 
