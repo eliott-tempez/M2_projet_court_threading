@@ -228,12 +228,14 @@ def get_template_from_pdb(file_path):
     template = Protein()
     # parse pdb file
     res_nb = 0
+    read_res = []
     with open(file_path, "r") as pdb_file:
         for line in pdb_file:
             # check if line is an alpha carbon
             if line.startswith("ATOM") and line[12:16].strip() == "CA":
                 # check if we don't already have a position for this residue
-                if res_nb != int(line[22:26].strip()):
+                if int(line[22:26].strip()) not in read_res:
+                    read_res.append(int(line[22:26].strip()))
                     res_nb += 1
                     # extract atom information
                     x = float(line[30:38].strip())
