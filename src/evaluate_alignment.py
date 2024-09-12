@@ -131,6 +131,8 @@ def plot_histogram(protein_dict, prot_name, output_dir):
     }
     # for each template protein
     for template_prot in protein_dict:
+        if template_prot == prot_name:
+            prot_type = protein_dict[template_prot]["type"]
         templates.append(template_prot)
         scores.append(protein_dict[template_prot]["score"])
         # get the type of the protein and assign a color
@@ -148,7 +150,7 @@ def plot_histogram(protein_dict, prot_name, output_dir):
     plt.bar(templates, scores, color=colors)
     plt.xlabel("template protein name")
     plt.ylabel("score")
-    plt.title(f"Alignment scores for sequence of interest {prot_name}")
+    plt.title(f"Alignment scores for sequence of interest {prot_name} ({prot_type})")
     plt.xticks(rotation=45)
     plt.tight_layout()
     # legend
