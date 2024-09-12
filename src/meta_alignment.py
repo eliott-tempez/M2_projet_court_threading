@@ -28,7 +28,7 @@ import os
 import subprocess
 
 
-OUTPUT_DIR = "results/"
+OUTPUT_DIR = "results/alignments/"
 
 
 ##############################################################################
@@ -184,7 +184,6 @@ def align_structures(pdb_paths, fasta_path):
     query_name = get_protein_name(fasta_path)
     # run align_structure.py for all templates
     with open(OUTPUT_DIR + f"alignment_{query_name}.txt", "w") as f_out:
-        f_out.write(f"{query_name}\n\n")
         for key in pdb_paths:
             for pdb_path in pdb_paths[key]:
                 template_name = get_protein_name(pdb_path)
