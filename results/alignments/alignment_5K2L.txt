@@ -1,0 +1,54 @@
+1YWJ all_beta
+1 - 2 - 3 - 4 - - - - 5 6 7 8 9 10 11 - - - 12 13 14 - 15 16 - - 17 - - - 18 19 - 20 - 21 22 23 - - 24 25 - 26 27 28
+|   |   |   |         | | | | | |  |        |  |  |    |  |      |        |  |    |    |  |  |      |  |    |  |  | 
+M G C T Y T I Q P G D T F W A I A  Q  R R G T  T  V  D V  I  Q S L  N P G V  N  P A  R L  Q  V  G Q V  I  N V  P  C 
+Total energy: -200.48
+
+2YSF all_beta
+1 2 3 4 5 6 7 - 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 - 24 25 - - 26 - - - 27 28 - 29 30 31 32 33 34 35 36 37 - 38 39 40
+| | | | | | |   | | |  |  |  |  |  |  |  |  |  |  |  |  |  |    |  |      |        |  |    |  |  |  |  |  |  |  |  |    |  |  | 
+M G C T Y T I Q P G D  T  F  W  A  I  A  Q  R  R  G  T  T  V  D V  I  Q S L  N P G V  N  P A  R  L  Q  V  G  Q  V  I  N V  P  C 
+Total energy: -250.53
+
+1ED7 all_beta
+1 - 2 - 3 4 5 6 7 8 9 10 11 12 13 14 15 - 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 - 43 44 45
+|   |   | | | | | | | |  |  |  |  |  |    |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |    |  |  | 
+M G C T Y T I Q P G D T  F  W  A  I  A  Q R  R  G  T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G  Q  V  I  N V  P  C 
+Total energy: -316.26
+
+1E0G alpha+beta
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 - 48
+| | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |    | 
+M G C T Y T I Q P G  D  T  F  W  A  I  A  Q  R  R  G  T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G  Q  V  I  N  V  P C 
+Total energy: -344.55
+
+1QHK alpha+beta
+1 - 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 - 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+|   | | | | | | | | |  |  |  |  |  |  |  |  |  |    |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+M G C T Y T I Q P G D  T  F  W  A  I  A  Q  R  R  G T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G  Q  V  I  N  V  P  C 
+Total energy: -332.2
+
+5K2L alpha+beta
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
+| | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+M G C T Y T I Q P G  D  T  F  W  A  I  A  Q  R  R  G  T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G  Q  V  I  N  V  P  C 
+Total energy: -365.88
+
+1V92 all_alpha
+1 2 3 4 5 6 7 8 9 - 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 - - 41 42 43 44 45 46
+| | | | | | | | |   |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |      |  |  |  |  |  | 
+M G C T Y T I Q P G D  T  F  W  A  I  A  Q  R  R  G  T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G Q V  I  N  V  P  C 
+Total energy: -345.55
+
+2PDD all_alpha
+1 2 3 - 4 - 5 - - - 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 - 37 38 39 40 41 42 43
+| | |   |   |       | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |    |  |  |  |  |  |  | 
+M G C T Y T I Q P G D T F W A  I  A  Q  R  R  G  T  T  V  D  V  I  Q  S  L  N  P  G  V  N  P  A  R  L  Q  V  G Q  V  I  N  V  P  C 
+Total energy: -302.89
+
+1HNR all_alpha
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 - 25 26 27 28 29 30 - 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+| | | | | | | | | |  |  |  |  |  |  |  |  |  |  |  |  |  |  |    |  |  |  |  |  |    |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+M G C T Y T I Q P G  D  T  F  W  A  I  A  Q  R  R  G  T  T  V  D V  I  Q  S  L  N  P G  V  N  P  A  R  L  Q  V  G  Q  V  I  N  V  P  C 
+Total energy: -302.02
+
