@@ -26,7 +26,6 @@ __date__ = "2024-09-12"
 import argparse
 import os
 import subprocess
-from multiprocessing import Pool, cpu_count
 
 
 OUTPUT_DIR = "results/alignments/"
@@ -187,7 +186,6 @@ def run_align_structure(fasta_path, pdb_path, key):
     command = ["python", "src/align_structure.py", fasta_path, pdb_path]
     # Run the command and capture the output
     result = subprocess.run(command, capture_output=True, text=True)
-    
     # Format the output for writing
     if key != "parent":
         return f"{template_name} {key}\n{result.stdout}\n"
@@ -196,17 +194,14 @@ def run_align_structure(fasta_path, pdb_path, key):
 
 
 def align_structures(pdb_paths, fasta_path):
-    """Run align_structure.py for all templates in parallel and write the output to a file."""
-    query_name = get_protein_name(fasta_path)    
-    # Prepare the tasks for parallel execution
-    tasks = [(fasta_path, pdb_path, key) for key in pdb_paths for pdb_path in pdb_paths[key]]
-    # Use multiprocessing Pool to run align_structure.py in parallel
-    with Pool(processes=cpu_count()) as pool:
-        results = pool.starmap(run_align_structure, tasks)
-    # Write all results to the output file
+    """Run align_structure.py for all templates and write output to a file."""
+    query_name = get_protein_name(fasta_path)  
     with open(OUTPUT_DIR + f"alignment_{query_name}.txt", "w") as f_out:
-        for result in results:
-            f_out.write(result)
+        # align structure
+        for type in pdb_paths:
+            for pdb_path in pdb_paths[type]:
+                result = run_align_structure(fasta_path, pdb_path, type)
+                f_out.write(result)
 
 
 ##############################################################################
