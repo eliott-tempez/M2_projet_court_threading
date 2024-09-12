@@ -2,6 +2,8 @@
 This script is used to evaluate the output of meta_alignment.py.
 You can find the documentation at 
 https://github.com/eliott-tempez/M2_projet_court_threading
+Due to a lack of time, this program is not dynamic ; it will
+only work for the data in the github.
 
 Usage:
 ======
@@ -22,6 +24,17 @@ import matplotlib.patches as mpatches
 
 INPUT_DIR = "results/alignments/"
 OUTPUT_DIR = "results/eval"
+DATA_LEN = {
+    "1HNR": 47,
+    "1V92": 46,
+    "2PDD": 43,
+    "1ED7": 45,
+    "1YWJ": 41,
+    "2YSF": 40,
+    "1E0G": 48,
+    "1QHK": 47,
+    "5K2L": 59    
+}
 
 
 ##############################################################################
@@ -68,6 +81,25 @@ def get_prot_name_from_file(file_path):
     return prot_name
 
 
+def calculate_gaps_proportion(code, alignment):
+    """Calculate the proportion of gaps inserted in the alignment.
+
+    Args:
+        code (str): name of the protein
+        alignment (str): alignment sequences
+
+    Returns:
+        float: gap proportion
+    """
+    # length of the sequence in theory
+    seq_len = DATA_LEN[code]
+    # length of the sequence in the text file
+    first_line_lst =alignment.split("\n")[0].split()
+    seq_len_file = len([i for i in first_line_lst if i != "-"])
+    # calculate proportion
+    return (1-(seq_len_file/seq_len))
+
+
 def read_txt_file(file_path):
     """Read text file in parent folder and return a dictionnary.
 
@@ -96,12 +128,15 @@ def read_txt_file(file_path):
                 protein_dict[code] = {
                     "type": entry_type,
                     "alignment": "",
-                    "score": 0.0
+                    "score": 0.0,
+                    "gap_prop": 0.0
                 }
 
             # extract alignment
             alignment = "\n".join(lines[1:4])
             protein_dict[code]["alignment"] = alignment
+            # extract proportion
+            protein_dict[code]["gap_prop"] = calculate_gaps_proportion(code, alignment)
             # extract score
             score_line = lines[-1]
             score = float(score_line.split()[-1])
@@ -120,6 +155,7 @@ def plot_histogram(protein_dict, prot_name, output_dir):
     """
     templates = []
     scores = []
+    props = []
     colors = []
 
     # define a color mapping for different types of proteins
@@ -135,11 +171,13 @@ def plot_histogram(protein_dict, prot_name, output_dir):
             prot_type = protein_dict[template_prot]["type"]
         templates.append(template_prot)
         scores.append(protein_dict[template_prot]["score"])
+        props.append(protein_dict[template_prot]["gap_prop"])
         # get the type of the protein and assign a color
         type = protein_dict[template_prot].get("type", "other")
         color = type_color_mapping.get(type, "lightgrey")
         colors.append(color)
-        
+    
+    # for the global score
     # sort by scores (ascending order)
     sorted_indices = sorted(range(len(scores)), key=lambda i: scores[i])
     templates = [templates[i] for i in sorted_indices]
@@ -158,6 +196,28 @@ def plot_histogram(protein_dict, prot_name, output_dir):
     plt.legend(handles=legend_handles, title="Protein Type")
     # save the figure
     output_path = os.path.join(OUTPUT_DIR, f"histogram_{prot_name}.png")
+    plt.savefig(output_path)
+    plt.close()
+    
+    # for the gap insertions
+    # sort by proportion (ascending order)
+    sorted_indices = sorted(range(len(props)), key=lambda i: props[i])
+    templates = [templates[i] for i in sorted_indices]
+    props = [props[i] for i in sorted_indices]
+    colors = [colors[i] for i in sorted_indices]
+    # create histogram
+    plt.figure(figsize=(10, 6))
+    plt.bar(templates, props, color=colors)
+    plt.xlabel("template protein name")
+    plt.ylabel("gap proportion")
+    plt.title(f"Gap proportion for sequence of interest {prot_name} ({prot_type})")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    # legend
+    legend_handles = [mpatches.Patch(color=color, label=ptype) for ptype, color in type_color_mapping.items()]
+    plt.legend(handles=legend_handles, title="Protein Type")
+    # save the figure
+    output_path = os.path.join(OUTPUT_DIR, f"histogram_prop_{prot_name}.png")
     plt.savefig(output_path)
     plt.close()
 
