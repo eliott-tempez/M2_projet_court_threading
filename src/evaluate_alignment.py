@@ -126,6 +126,7 @@ def plot_histogram(protein_dict, prot_name, output_dir):
     type_color_mapping = {
         "all_alpha": "skyblue",
         "all_beta": "salmon",
+        "alpha+beta": "orchid",
         "other": "lightgrey"
     }
     # for each template protein
