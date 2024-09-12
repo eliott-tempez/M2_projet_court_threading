@@ -91,13 +91,13 @@ def read_txt_file(file_path):
                 code, entry_type = lines[0].split()
             else:
                 code, entry_type = lines[0].strip(), ""
-                # initialise dict
-                if code not in protein_dict:
-                    protein_dict[code] = {
-                        "type": entry_type,
-                        "alignment": "",
-                        "score": 0.0
-                    }
+            # initialise dict
+            if code not in protein_dict:
+                protein_dict[code] = {
+                    "type": entry_type,
+                    "alignment": "",
+                    "score": 0.0
+                }
 
             # extract alignment
             alignment = "\n".join(lines[1:4])
