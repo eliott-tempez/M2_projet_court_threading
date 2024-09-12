@@ -1,7 +1,7 @@
 ## Double dynamic programming threading program
 #### Eliott TEMPEZ - M2BI - Université Paris Cité
 
-*Description*
+This project aims to implement a threading program, a method used to model proteins which have the same fold as proteins of known structures, with python. It is based on "double" dynamic programming, as explained in Jones et al. (1995). You can find the scripts in the src/ directory, and the results in the results/ directory.
 
 All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 3 fold classes : all alpha, all beta, and alpha and beta (a+b). They are all between 40 and 50 residues-long. There are 3 proteins per class, meaning the programs were tested on 9 different proteins.The data/small_prot/ folder contains a fasta and pdb file for a 10-residues long protein, which was used to develop the program.
 
@@ -31,5 +31,4 @@ This program returns a text file in results/alignments/ with all results from th
 
 #### To run the program evaluating the alignment of a protein of interest on several templates:
 `python src/evaluate_alignment.py`
-This program automatically processes the files in the results/alignments/ directory and outputs graphs in the results/eval directory.
-
+This program automatically processes the files in the results/alignments/ directory and outputs graphs in the results/eval/ directory.
