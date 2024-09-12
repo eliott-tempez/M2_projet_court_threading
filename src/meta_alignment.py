@@ -200,8 +200,8 @@ def align_structures(pdb_paths, fasta_path):
     with open(OUTPUT_DIR + f"alignment_{query_name}.txt", "w") as f_out:
         # align structure
         for type in pdb_paths:
-            print(f"\t{type}...")
             for pdb_path in pdb_paths[type]:
+                print(f"\t{get_protein_name(pdb_path)}...")
                 result = run_align_structure(fasta_path, pdb_path, type)
                 f_out.write(result)
 
