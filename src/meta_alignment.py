@@ -26,6 +26,7 @@ __date__ = "2024-09-12"
 import argparse
 import os
 import subprocess
+from multiprocessing import Pool, cpu_count
 
 
 OUTPUT_DIR = "results/alignments/"
@@ -180,21 +181,32 @@ def get_protein_name(file_path):
    
 
 ####---------------------      RUN MAIN PROGRAM      ---------------------####
+def run_align_structure(fasta_path, pdb_path, key):
+    """run align_structure.py for a given template."""
+    template_name = get_protein_name(pdb_path)
+    command = ["python", "src/align_structure.py", fasta_path, pdb_path]
+    # Run the command and capture the output
+    result = subprocess.run(command, capture_output=True, text=True)
+    
+    # Format the output for writing
+    if key != "parent":
+        return f"{template_name} {key}\n{result.stdout}\n"
+    else:
+        return f"{template_name}\n{result.stdout}\n"
+
+
 def align_structures(pdb_paths, fasta_path):
-    query_name = get_protein_name(fasta_path)
-    # run align_structure.py for all templates
+    """Run align_structure.py for all templates in parallel and write the output to a file."""
+    query_name = get_protein_name(fasta_path)    
+    # Prepare the tasks for parallel execution
+    tasks = [(fasta_path, pdb_path, key) for key in pdb_paths for pdb_path in pdb_paths[key]]
+    # Use multiprocessing Pool to run align_structure.py in parallel
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.starmap(run_align_structure, tasks)
+    # Write all results to the output file
     with open(OUTPUT_DIR + f"alignment_{query_name}.txt", "w") as f_out:
-        for key in pdb_paths:
-            for pdb_path in pdb_paths[key]:
-                template_name = get_protein_name(pdb_path)
-                command = ["python", "src/align_structure.py", fasta_path, pdb_path]
-                result = subprocess.run(command, capture_output=True, text=True)
-                if key != "parent":
-                    f_out.write(f"{template_name} {key}\n")
-                else:
-                    f_out.write(f"{template_name}\n")
-                f_out.write(f"{result.stdout}\n")
-             
+        for result in results:
+            f_out.write(result)
 
 
 ##############################################################################
