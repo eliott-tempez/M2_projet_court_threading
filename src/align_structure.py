@@ -27,6 +27,7 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 from Bio.SeqUtils import seq1
+from multiprocessing import Pool, cpu_count
 
 
 DOPE_FILE = "data/dope.par"
@@ -368,9 +369,15 @@ def fill_LL_matrix(shape, dist_matrix, dope_matrix,
     return L_mat
 
 
+def fill_LL_matrix_wrapper(args):
+    """Wrapper function to unpack arguments for multiprocessing."""
+    shape, dist_matrix, dope_matrix, test_sequence, gap_penalty, i, j = args
+    return (i, j, fill_LL_matrix(shape, dist_matrix, dope_matrix, test_sequence, gap_penalty, i, j))
+
+
 def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
                             test_sequence, gap_penalty):
-    """Create the 'super' matrix filled with each low-level matrix.
+    """Create the 'super' matrix filled with each low-level matrix using multiprocessing.
 
     Args:
         shape (tuple): shape of the matrix
@@ -382,14 +389,21 @@ def create_global_LL_matrix(shape, dist_matrix, dope_matrix,
     Returns:
        np.ndarray: matrix with the low-level matrices in each of its cells
     """
-    # initialise global matrix
+    # Initialise global matrix
     global_L_mat = np.empty(shape, dtype=object)
-    # for each cell except first line and column, create a low-level matrix
-    for i in range(1, shape[0]):
-        for j in range(1, shape[1]):
-            L_mat = fill_LL_matrix(shape, dist_matrix, dope_matrix,
-                                   test_sequence, gap_penalty, i, j)
-            global_L_mat[i, j] = L_mat
+
+    # Prepare arguments for multiprocessing
+    tasks = [(shape, dist_matrix, dope_matrix, test_sequence, gap_penalty, i, j)
+             for i in range(1, shape[0])
+             for j in range(1, shape[1])]
+
+    # Use multiprocessing Pool to fill matrices in parallel
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.map(fill_LL_matrix_wrapper, tasks)
+
+    # Populate the global_L_mat with the results
+    for i, j, L_mat in results:
+        global_L_mat[i, j] = L_mat
     return global_L_mat
 
 
