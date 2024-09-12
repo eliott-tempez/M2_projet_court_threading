@@ -3,7 +3,7 @@
 
 *Description*
 
-All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 2 fold classes : all alpha and all beta. They are all between 17 and 25 residues-long (thus being peptids). There are 3 proteins per class, meaning the programs were tested on 6 different proteins.The data/small_prot/ folder contains a fasta and pdb file for a 10-residues long protein, which was used to develop the program.
+All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 3 fold classes : all alpha, all beta, and alpha and beta (a+b). They are all between 40 and 50 residues-long. There are 5 proteins per class, meaning the programs were tested on 9 different proteins.The data/small_prot/ folder contains a fasta and pdb file for a 10-residues long protein, which was used to develop the program.
 
 To read the full report on this project, you can find a pdf file in the doc/ folder.
 
@@ -24,11 +24,4 @@ run the code line:
 * arg3 (optional) : gap penalty
 
 #### To run the program on several templates for one sequence of interest:
-`python src/meta_alignment.py arg1 arg2`
-* arg1 : directory path containing pdb files that can be in subdirectories or not
-* arg2 : path to the fasta file of the protein of interest
-This program returns a text file in results/alignments/ with all results from the main program *align_structure.py*
 
-#### To run the program evaluating the alignment of a protein of interest on several templates:
-`python src/evaluate_alignment.py`
-This program automatically processes the files in the results/alignments/ directory and outputs graphs in the results/eval directory.
