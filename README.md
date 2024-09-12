@@ -3,7 +3,7 @@
 
 *Description*
 
-All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 2 fold classes : all alpha and all beta. They are all between 30 and 40 residues-long. There are 3 proteins per class, meaning the programs were tested on 6 different proteins.The data/small_prot/ folder contains a fasta and pdb file for a 10-residues long protein, which was used to develop the program.
+All fasta and pdb files in the data/proteins/ folder were found on the PDB databate, and are classified into 2 fold classes : all alpha and all beta. They are all between 27 and 36 residues-long. There are 3 proteins per class, meaning the programs were tested on 6 different proteins.The data/small_prot/ folder contains a fasta and pdb file for a 10-residues long protein, which was used to develop the program.
 
 To read the full report on this project, you can find a pdf file in the doc/ folder.
 
