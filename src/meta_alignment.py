@@ -196,9 +196,11 @@ def run_align_structure(fasta_path, pdb_path, key):
 def align_structures(pdb_paths, fasta_path):
     """Run align_structure.py for all templates and write output to a file."""
     query_name = get_protein_name(fasta_path)  
+    print(f"aligning {query_name} with template...")
     with open(OUTPUT_DIR + f"alignment_{query_name}.txt", "w") as f_out:
         # align structure
         for type in pdb_paths:
+            print(f"\t{type}...")
             for pdb_path in pdb_paths[type]:
                 result = run_align_structure(fasta_path, pdb_path, type)
                 f_out.write(result)
