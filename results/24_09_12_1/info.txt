@@ -1,2 +1,2 @@
-These results were obtained on 12/09/24, with src/ directory version 3b3c48e4baf2c923bf7b7d95bed756f1f6f4512c 
+These results were obtained on 12/09/24, with src/ directory version 81cebce8af2c0269bc4e1d986c6c609f1df567d4 
 (see github repo https://github.com/eliott-tempez/M2_projet_court_threading/)
