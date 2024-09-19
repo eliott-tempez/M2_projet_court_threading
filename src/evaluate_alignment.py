@@ -1,16 +1,23 @@
 """
 This script is used to evaluate the output of meta_alignment.py.
-You can find the documentation at 
-https://github.com/eliott-tempez/M2_projet_court_threading
-Due to a lack of time, this program is not dynamic ; it will
-only work for the data in the github.
+It takes as input all text files in the directory passed as argument,
+and returns for each of the protein of interest : a histogram of 
+the total energy of the alignment to each template, and a histogram
+of the gap proportion compared to the aligned residues. You can find the 
+documentation at https://github.com/eliott-tempez/M2_projet_court_threading
 
 Usage:
 ======
-    python evaluate_alignment.py
+    python evaluate_alignment.py argument1
+    
+    argument1: the directory with outputs from the meta_alignment.py script
 
     Returns :
-        A set of graphs, automatically saved in the results/eval directory
+        a histogram of the total energy of the alignment to each template, 
+        and a histogram of the gap proportion compared to the aligned residues
+        for each protein of interest, automatically saved in the 
+        results/eval/ folder.
+        
 """
 
 __author__ = "Eliott TEMPEZ"
@@ -18,23 +25,12 @@ __date__ = "2024-09-12"
 
 
 import os
+import argparse
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
-INPUT_DIR = "results/alignments/"
 OUTPUT_DIR = "results/eval"
-DATA_LEN = {
-    "1HNR": 47,
-    "1V92": 46,
-    "2PDD": 43,
-    "1ED7": 45,
-    "1YWJ": 41,
-    "2YSF": 40,
-    "1E0G": 48,
-    "1QHK": 47,
-    "5K2L": 59    
-}
 
 
 ##############################################################################
@@ -46,6 +42,25 @@ def check_file(file_path):
     is_file = os.path.isfile(file_path)
     assert is_file, "Error : directory results/alignments should " \
     "only contain files"
+
+
+####------------------------      READ ARGS      -------------------------####
+def read_args():
+    """Read and return command line arguments.
+
+    Returns:
+        argparse.Namespace: command lign arguments
+    """
+    descr = "Evaluate the output of meta_alignment.py"
+    parser = argparse.ArgumentParser(description=descr)
+
+    # arguments
+    folder_align = "parent folder containing one or more txt files," \
+        " generated from the program meta_alignment.py "
+
+    parser.add_argument("folder_align", type=str, help=folder_align)
+    args = parser.parse_args()
+    return args
 
 
 ####-----------------------      HANDLE FILES      -----------------------####
@@ -91,13 +106,13 @@ def calculate_gaps_proportion(code, alignment):
     Returns:
         float: gap proportion
     """
-    # length of the sequence in theory
-    seq_len = DATA_LEN[code]
     # length of the sequence in the text file
-    first_line_lst =alignment.split("\n")[0].split()
-    seq_len_file = len([i for i in first_line_lst if i != "-"])
+    first_line_lst = alignment.split("\n")[0].split()
+    len_seq = len(first_line_lst)
+    second_line_lst = alignment.split("\n")[1].split()
+    n_gaps = len_seq - len([i for i in second_line_lst if i == "|"])
     # calculate proportion
-    return (1-(seq_len_file/seq_len))
+    return (n_gaps/len_seq)
 
 
 def read_txt_file(file_path):
@@ -227,6 +242,10 @@ def plot_histogram(protein_dict, prot_name, output_dir):
 ##############################################################################
 
 if __name__ == "__main__":
+    # import args
+    args = read_args()
+    INPUT_DIR = args.folder_align
+    
     # get files list
     file_paths = extract_files_from_dir(INPUT_DIR)
 

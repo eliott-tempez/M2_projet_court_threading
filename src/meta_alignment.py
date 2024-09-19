@@ -18,6 +18,7 @@ Usage:
         A text file, containing for each template protein:
         - The optimum alignment with the protein of interest
         - The total energy of this global alignment
+    The text file is automatically saved in the results/alignments/ folder.
 """
 
 __author__ = "Eliott TEMPEZ"

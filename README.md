@@ -28,8 +28,9 @@ run the code line:
 * arg1 : directory path containing pdb files that can be in subdirectories or not
 * arg2 : path to the fasta file of the protein of interest
 * arg3 (optional) : gap penalty
-This program returns a text file in results/alignments/ with all results from the main program *align_structure.py*
+This program returns a text file in results/alignments/ with all results from the main program *align_structure.py*, automatically saved in the results/alignments/ folder.
 
 #### To run the program evaluating the alignment of a protein of interest on several templates:
-`python src/evaluate_alignment.py`
-This program automatically processes the files in the results/alignments/ directory and outputs graphs in the results/eval/ directory.
+`python src/evaluate_alignment.py arg1` 
+* arg1 : the directory with outputs from the meta_alignment.py script
+This program automatically processes the files in the results/alignments/ directory and outputs graphs in the results/eval/ directory. It returns a histogram of the total energy of the alignment to each template, and a histogram of the gap proportion compared to the aligned residues for each protein of interest, automatically saved in the results/eval/ folder.
