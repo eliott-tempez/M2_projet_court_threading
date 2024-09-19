@@ -12,6 +12,7 @@ Usage:
     their names should be some form of classification for the proteins
     argument2: path to the fasta file of the protein of interest (can be 
     in the parent folder or not)
+    argument3 (optional) : the gap penalty for the alignment, default value 0
 
     Returns :
         A text file, containing for each template protein:
@@ -69,9 +70,12 @@ def read_args():
         " are subfolders, their names should be some form of " \
         "classification for the model proteins"
     fasta_descr = "fasta file path of the protein sequence you want to model"
+    gap_descr = "gap penalty for the alignment, default value 0"
 
     parser.add_argument("main_folder", type=str, help=folder_descr)
     parser.add_argument("fasta_path", type=str, help=fasta_descr)
+    parser.add_argument("gap_penalty", type=float,
+                        nargs="?", default=0, help=gap_descr)
     args = parser.parse_args()
     return args
 
@@ -180,10 +184,10 @@ def get_protein_name(file_path):
    
 
 ####---------------------      RUN MAIN PROGRAM      ---------------------####
-def run_align_structure(fasta_path, pdb_path, key):
+def run_align_structure(fasta_path, pdb_path, key, gap_penalty):
     """run align_structure.py for a given template."""
     template_name = get_protein_name(pdb_path)
-    command = ["python", "src/align_structure.py", fasta_path, pdb_path]
+    command = ["python", "src/align_structure.py", fasta_path, pdb_path, gap_penalty]
     # Run the command and capture the output
     result = subprocess.run(command, capture_output=True, text=True)
     # Format the output for writing
@@ -193,7 +197,7 @@ def run_align_structure(fasta_path, pdb_path, key):
         return f"{template_name}\n{result.stdout}\n"
 
 
-def align_structures(pdb_paths, fasta_path):
+def align_structures(pdb_paths, fasta_path, gap_penalty):
     """Run align_structure.py for all templates and write output to a file."""
     query_name = get_protein_name(fasta_path)  
     print(f"aligning {query_name} with template...")
@@ -202,7 +206,7 @@ def align_structures(pdb_paths, fasta_path):
         for type in pdb_paths:
             for pdb_path in pdb_paths[type]:
                 print(f"\t{get_protein_name(pdb_path)}...")
-                result = run_align_structure(fasta_path, pdb_path, type)
+                result = run_align_structure(fasta_path, pdb_path, type, gap_penalty)
                 f_out.write(result)
 
 
@@ -215,7 +219,8 @@ if __name__ == "__main__":
     args = read_args()
     main_folder = args.main_folder
     fasta_path = args.fasta_path
+    GAP_PENALTY = args.gap_penalty
     # get all pdb paths
     pdb_paths = get_all_pdb_paths(main_folder)
     # run program
-    align_structures(pdb_paths, fasta_path)
+    align_structures(pdb_paths, fasta_path, GAP_PENALTY)
